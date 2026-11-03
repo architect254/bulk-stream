@@ -21,15 +21,15 @@ class InventoryMovementInfolist
                 TextEntry::make('movement_type')
                     ->badge(),
                 TextEntry::make('quantity')
-                    ->numeric(),
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
                 TextEntry::make('balance_before')
-                    ->numeric(),
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
                 TextEntry::make('balance_after')
-                    ->numeric(),
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
                 TextEntry::make('source_type')
                     ->placeholder('-'),
                 TextEntry::make('source_id')
-                    ->numeric()
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-')
                     ->placeholder('-'),
                 TextEntry::make('idempotency_key')
                     ->placeholder('-'),

@@ -20,7 +20,7 @@ class TruckDispatchInfolist
                     ->label('Tank')
                     ->label('Tank'),
                 TextEntry::make('quantity')
-                    ->numeric(),
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
                 TextEntry::make('status')
                     ->badge(),
                 TextEntry::make('dispatched_at')

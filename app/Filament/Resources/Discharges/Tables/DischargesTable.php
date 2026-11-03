@@ -40,17 +40,17 @@ class DischargesTable
                     ->sortable(),
                 TextColumn::make('gross_mass')
                     ->label('Gross')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->placeholder('-'),
                 TextColumn::make('transit_loss_mass')
                     ->label('Loss')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->placeholder('-'),
                 TextColumn::make('net_received_mass')
                     ->label('Net')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->placeholder('-'),
                 TextColumn::make('started_at')

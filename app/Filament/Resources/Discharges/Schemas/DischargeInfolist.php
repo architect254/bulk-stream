@@ -21,13 +21,13 @@ class DischargeInfolist
                 TextEntry::make('status')
                     ->badge(),
                 TextEntry::make('gross_mass')
-                    ->numeric()
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-')
                     ->placeholder('-'),
                 TextEntry::make('transit_loss_mass')
-                    ->numeric()
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-')
                     ->placeholder('-'),
                 TextEntry::make('net_received_mass')
-                    ->numeric()
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-')
                     ->placeholder('-'),
                 TextEntry::make('started_at')
                     ->dateTime()

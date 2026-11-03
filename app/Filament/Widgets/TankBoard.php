@@ -28,18 +28,18 @@ class TankBoard extends TableWidget
                     ->sortable(),
                 TextColumn::make('current_quantity')
                     ->label('Current')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->sortable(),
                 TextColumn::make('capacity')
                     ->label('Capacity')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->sortable(),
                 TextColumn::make('remaining')
                     ->label('Remaining')
                     ->state(fn (Tank $record): string => bcsub((string) $record->capacity, (string) $record->current_quantity, 3))
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT'),
                 TextColumn::make('utilization')
                     ->label('Utilization')
