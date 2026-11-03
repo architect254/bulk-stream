@@ -40,6 +40,7 @@ class VesselsTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
+            ->paginated(false)
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

@@ -66,6 +66,7 @@ class TanksTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
+            ->paginated(false)
             ->toolbarActions([]);
     }
 }
