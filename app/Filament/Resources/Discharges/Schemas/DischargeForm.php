@@ -49,7 +49,7 @@ class DischargeForm
                             ->options(DischargeStatus::class)
                             ->default(DischargeStatus::Draft)
                             ->disabled()
-                            ->dehydrated(),
+                            ->dehydrated(false),
                     ])
                     ->columns(2),
 

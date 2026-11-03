@@ -53,7 +53,7 @@ class TruckDispatchForm
                             ->options(TruckDispatchStatus::class)
                             ->default(TruckDispatchStatus::Planned)
                             ->disabled()
-                            ->dehydrated(),
+                            ->dehydrated(false),
                         TextInput::make('idempotency_key')
                             ->default(null),
                     ])

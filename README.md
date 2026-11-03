@@ -1,58 +1,158 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Bulkstream Cargo Handling System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A focused Laravel 13 / Filament 5 technical-assessment application for a bulk-liquid terminal.
 
-## About Laravel
+Core workflow:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+Vessel Discharge → Shore Storage Tank → Truck Delivery
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Supported commodities:
 
-## Contributing
+- CPO — Crude Palm Oil
+- CPOL — Crude Palm Olein
+- PFAD — Palm Fatty Acid Distillate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Technology Stack
 
-## Code of Conduct
+- PHP 8.4.27
+- Laravel 13.39.0
+- Filament 5.11.0
+- Livewire 4.4.8
+- MySQL/MariaDB 11.4.5 (MySQL-compatible)
+- Node.js v24.22.2
+- npm 11.19.1
+- Vite 8.3.5
+- Tailwind CSS via a custom Filament theme
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Architecture
 
-## Security Vulnerabilities
+```text
+Filament / Livewire
+        ↓
+Application Actions
+        ↓
+Domain Policies and Value Objects
+        ↓
+Eloquent / MySQL
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Layers:
 
-## License
+- `app/Filament/` — presentation: resources, pages, widgets, forms, tables, actions
+- `app/Actions/` — application workflows and transaction boundaries
+- `app/Domain/` — pure business rules, calculations, policies, value objects, exceptions
+- `app/Models/` and `database/` — persistence, migrations, constraints, seeders
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Filament does not directly mutate inventory. All inventory changes go through:
+
+- `ProcessInboundDischarge`
+- `ProcessTruckDispatch`
+
+Those actions enforce domain rules, transactions, row locking, idempotency, and ledger creation.
+
+## Core Business Rules
+
+- Tank capacity is enforced server-side: `current + incoming <= capacity`.
+- Inbound cargo applies `0.5%` transit mass loss:
+  - `loss = gross × 0.005`
+  - `net = gross - loss`
+- Source logs are sorted by `occurred_at`, then `sequence`, then stable ID before processing.
+- Late events are not silently inserted into completed discharge history.
+- Inventory mutations are transactional and use `lockForUpdate()`.
+- Duplicate operations are prevented using stable idempotency keys and database uniqueness constraints.
+- Inventory movements are append-only and store `balance_before` and `balance_after`.
+- Cargo quantities use `DECIMAL(18,3)`. PHP floating-point arithmetic is not used for authoritative cargo calculations.
+
+Assessment assumption: each `DischargeLog` represents an individual cargo event whose gross mass contributes to total discharge gross. This is an assessment modelling assumption, not an externally verified terminal standard.
+
+## Setup
+
+### Prerequisites
+
+- PHP 8.3+ with PDO MySQL and intl extensions
+- Composer
+- Node.js/npm
+- MySQL or MariaDB
+
+### Install
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+```
+
+Configure `.env`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=bulk_stream
+DB_USERNAME=your_user
+DB_PASSWORD=your_password
+```
+
+Create the database, then run:
+
+```bash
+php artisan migrate:fresh --seed
+npm run build
+php artisan serve
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000/admin
+```
+
+Default seeded development user:
+
+```text
+admin@example.com / password
+```
+
+## Testing
+
+```bash
+php artisan test
+npm run build
+```
+
+The test suite covers:
+
+- Domain calculations and policies
+- State transitions
+- Chronological source-log sorting
+- Inbound discharge workflow
+- Outbound truck dispatch workflow
+- Capacity and inventory availability
+- Idempotency
+- Filament interface integration
+
+Final verified results:
+
+```text
+php artisan test
+# 67 tests, 158 assertions, passed
+
+npm run build
+# success
+```
+
+## Known Limitations
+
+- No advanced RBAC or permission matrix.
+- No manual inventory adjustment mechanism.
+- No external integrations, queues, or APIs.
+- No historical event replay/rebuild.
+- Concurrency tests use sequential locked transactions rather than true parallel requests.
+- Seed data is assessment-oriented and not a production terminal history.
+
+## Assessment Scope
+
+This is a seven-day technical assessment, not a production terminal deployment. The implementation intentionally excludes KPA/customs/KRA integrations, M-Pesa, GPS/AIS, ERP integrations, laboratory systems, IoT sensors, multi-terminal tenancy, and production infrastructure.
