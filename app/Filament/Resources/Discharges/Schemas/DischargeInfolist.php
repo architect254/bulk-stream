@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Filament\Resources\Discharges\Schemas;
+
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Schema;
+
+class DischargeInfolist
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextEntry::make('reference'),
+                TextEntry::make('vessel.name')
+                    ->label('Vessel'),
+                TextEntry::make('commodity.name')
+                    ->label('Commodity'),
+                TextEntry::make('tank.code')
+                    ->label('Tank'),
+                TextEntry::make('status')
+                    ->badge(),
+                TextEntry::make('gross_mass')
+                    ->numeric()
+                    ->placeholder('-'),
+                TextEntry::make('transit_loss_mass')
+                    ->numeric()
+                    ->placeholder('-'),
+                TextEntry::make('net_received_mass')
+                    ->numeric()
+                    ->placeholder('-'),
+                TextEntry::make('started_at')
+                    ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('completed_at')
+                    ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('idempotency_key')
+                    ->placeholder('-'),
+                TextEntry::make('created_at')
+                    ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('updated_at')
+                    ->dateTime()
+                    ->placeholder('-'),
+            ]);
+    }
+}
