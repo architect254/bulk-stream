@@ -6,6 +6,7 @@ use App\Models\Discharge;
 use App\Models\Tank;
 use App\Models\TruckDispatch;
 use Filament\Widgets\StatsOverviewWidget;
+use App\Domain\Cargo\Support\DecimalMath;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class TerminalOverview extends StatsOverviewWidget
@@ -14,7 +15,7 @@ class TerminalOverview extends StatsOverviewWidget
     {
         $inventory = (string) Tank::query()->sum('current_quantity');
         $capacity = (string) Tank::query()->sum('capacity');
-        $remaining = bcsub($capacity, $inventory, 3);
+        $remaining = DecimalMath::subtract($capacity, $inventory);
 
         return [
             Stat::make('Stored inventory', number_format((float) $inventory, 3) . ' MT')

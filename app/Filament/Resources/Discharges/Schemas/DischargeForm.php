@@ -125,7 +125,7 @@ class DischargeForm
     {
         $total = self::totalGross($get);
 
-        if (bccomp($total, '0', 3) <= 0) {
+        if (DecimalMath::toMinorUnits($total) <= 0) {
             return '0.000';
         }
 
@@ -136,7 +136,7 @@ class DischargeForm
     {
         $total = self::totalGross($get);
 
-        if (bccomp($total, '0', 3) <= 0) {
+        if (DecimalMath::toMinorUnits($total) <= 0) {
             return '0.000';
         }
 
@@ -169,7 +169,7 @@ class DischargeForm
             return '0.000';
         }
 
-        return bcsub((string) $tank->capacity, (string) $tank->current_quantity, 3);
+        return DecimalMath::subtract((string) $tank->capacity, (string) $tank->current_quantity);
     }
 
     protected static function projectedBalance(Get $get): string

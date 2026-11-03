@@ -120,6 +120,6 @@ class TruckDispatchForm
             return false;
         }
 
-        return bccomp((string) $tank->current_quantity, $quantity, 3) >= 0;
+        return DecimalMath::toMinorUnits((string) $tank->current_quantity) >= DecimalMath::toMinorUnits($quantity);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tanks\Tables;
 
+use App\Domain\Cargo\Support\DecimalMath;
 use App\Models\Tank;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -34,17 +35,21 @@ class TanksTable
                     ->sortable(),
                 TextColumn::make('remaining')
                     ->label('Remaining')
-                    ->state(fn (Tank $record): string => bcsub((string) $record->capacity, (string) $record->current_quantity, 3))
+                    ->state(fn (Tank $record): string => DecimalMath::subtract((string) $record->capacity, (string) $record->current_quantity))
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT'),
                 TextColumn::make('utilization')
                     ->label('Utilization')
                     ->state(function (Tank $record): string {
-                        if (bccomp((string) $record->capacity, '0', 3) === 0) {
+                        $capacityMinor = DecimalMath::toMinorUnits((string) $record->capacity);
+
+                        if ($capacityMinor === 0) {
                             return '0.00';
                         }
 
-                        return bcdiv(bcmul((string) $record->current_quantity, '100', 3), (string) $record->capacity, 2);
+                        $percent = intdiv(DecimalMath::toMinorUnits((string) $record->current_quantity) * 10000, $capacityMinor);
+
+                        return number_format($percent / 100, 2);
                     })
                     ->suffix('%')
                     ->color(fn (string $state): string => (float) $state >= 90 ? 'danger' : ((float) $state >= 75 ? 'warning' : 'success')),
