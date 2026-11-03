@@ -57,9 +57,7 @@ class InventoryMovementResource extends Resource
     {
         return [
             'index' => ListInventoryMovements::route('/'),
-            'create' => CreateInventoryMovement::route('/create'),
             'view' => ViewInventoryMovement::route('/{record}'),
-            'edit' => EditInventoryMovement::route('/{record}/edit'),
         ];
     }
 }
