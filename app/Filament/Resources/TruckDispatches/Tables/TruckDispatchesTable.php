@@ -39,7 +39,7 @@ class TruckDispatchesTable
                     ->sortable(),
                 TextColumn::make('quantity')
                     ->label('Quantity')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->sortable(),
                 TextColumn::make('status')

@@ -15,9 +15,9 @@ class TankInfolist
                 TextEntry::make('commodity.name')
                     ->label('Commodity'),
                 TextEntry::make('capacity')
-                    ->numeric(),
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
                 TextEntry::make('current_quantity')
-                    ->numeric(),
+                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
                 TextEntry::make('status')
                     ->badge(),
                 TextEntry::make('created_at')

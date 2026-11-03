@@ -29,15 +29,15 @@ class InventoryMovementsTable
                     ->label('Commodity')
                     ->sortable(),
                 TextColumn::make('quantity')
-                    ->numeric(decimalPlaces: 3)
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
                     ->suffix(' MT')
                     ->sortable(),
                 TextColumn::make('balance_before')
                     ->label('Before')
-                    ->numeric(decimalPlaces: 3),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
                 TextColumn::make('balance_after')
                     ->label('After')
-                    ->numeric(decimalPlaces: 3),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
                 TextColumn::make('source_type')
                     ->label('Source')
                     ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '-'),
