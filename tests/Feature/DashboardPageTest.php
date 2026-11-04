@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\ProcessInboundDischarge;
 use App\Application\Dashboard\TerminalDashboardReadModel;
+use App\Support\OperationalTime;
 use App\Enums\CommodityCode;
 use App\Enums\DischargeStatus;
 use App\Enums\TankStatus;
@@ -13,6 +14,7 @@ use App\Filament\Pages\Dashboard;
 use App\Models\Commodity;
 use App\Models\Discharge;
 use App\Models\DischargeLog;
+use App\Models\InventoryMovement;
 use App\Models\Tank;
 use App\Models\TruckDispatch;
 use App\Models\User;
@@ -157,10 +159,42 @@ class DashboardPageTest extends TestCase
         $this->assertSame($first, $second);
     }
 
+    public function test_near_midnight_utc_timestamp_is_presented_in_nairobi(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-11-04 22:30:00', 'UTC'));
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create([
+            'commodity_id' => $commodity->id,
+            'capacity' => 5000,
+            'current_quantity' => 0,
+        ]);
+
+        $movement = InventoryMovement::factory()->create([
+            'tank_id' => $tank->id,
+            'commodity_id' => $commodity->id,
+            'movement_type' => \App\Enums\InventoryMovementType::Inbound,
+            'quantity' => 10,
+            'balance_before' => 0,
+            'balance_after' => 10,
+            'occurred_at' => CarbonImmutable::parse('2026-11-04 22:30:00', 'UTC'),
+        ]);
+
+        Livewire::actingAs(User::factory()->create())
+            ->test(Dashboard::class)
+            ->assertSuccessful()
+            ->assertSee('Nov 5, 2026 01:30:00');
+
+        $this->assertSame(
+            '2026-11-04 22:30:00',
+            (string) \Illuminate\Support\Facades\DB::table('inventory_movements')->where('id', $movement->id)->value('occurred_at')
+        );
+    }
+
     private function freezeAt(string $datetime): void
     {
         CarbonImmutable::setTestNow(
-            CarbonImmutable::parse($datetime, TerminalDashboardReadModel::TIMEZONE)
+            CarbonImmutable::parse($datetime, OperationalTime::timezone())
         );
     }
 }

@@ -8,6 +8,7 @@ use App\Filament\Widgets\OperationalFlow;
 use App\Filament\Widgets\RecentMovements;
 use App\Filament\Widgets\TankBoard;
 use App\Filament\Widgets\TerminalOverview;
+use App\Support\OperationalTime;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Illuminate\Contracts\Support\Htmlable;
 
@@ -23,8 +24,9 @@ class Dashboard extends BaseDashboard
         $reportingDate = app(TerminalDashboardReadModel::class)->reportingDateLabel();
 
         return sprintf(
-            'Mombasa Terminal · Operational overview of cargo receipts, tank storage and truck dispatches · Reporting date: %s (Africa/Nairobi)',
+            'Mombasa Terminal · Operational overview of cargo receipts, tank storage and truck dispatches · Reporting date: %s (%s)',
             $reportingDate,
+            OperationalTime::timezone(),
         );
     }
 

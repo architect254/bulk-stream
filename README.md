@@ -93,6 +93,25 @@ and never mutate operational records.
 - Node.js/npm
 - MySQL or MariaDB
 
+Operational timestamps are stored in UTC and presented in `Africa/Nairobi`.
+Set `TERMINAL_TIMEZONE` in `.env` to change the presentation timezone; leave
+`APP_TIMEZONE` as `UTC` so database storage remains UTC.
+
+In this development environment, the PHP CLI wrapper at `/home/jared/bin/php`
+loads `intl`. Verify it before serving:
+
+```bash
+/home/jared/bin/php -m | grep intl
+```
+
+Start the application with that same PHP binary so the web process also loads
+`intl`:
+
+```bash
+export PATH="/home/jared/bin:$PATH"
+php artisan serve
+```
+
 ### Install
 
 ```bash
@@ -159,7 +178,7 @@ Final verified results:
 
 ```text
 php artisan test
-# 107 tests, 421 assertions, passed
+# 119 tests, 442 assertions, passed
 
 npm run build
 # success
