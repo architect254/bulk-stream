@@ -36,12 +36,8 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups(['Operations', 'Inventory'])
             ->login()
             ->colors([
-                'primary' => Color::hex('#0F8B8D'),
-                'gray' => Color::hex('#5B6770'),
-                'success' => Color::Green,
-                'warning' => Color::Amber,
-                'danger' => Color::Red,
-                'info' => Color::Teal,
+                'primary' => Color::Teal,
+                'gray' => Color::Slate,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

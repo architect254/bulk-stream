@@ -38,7 +38,6 @@ class VesselsTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->paginated(false)
             ->selectable(false)
             ->toolbarActions([]);
     }

@@ -98,7 +98,6 @@ class TruckDispatchesTable
                         }
                     }),
             ])
-            ->paginated(false)
             ->selectable(false)
             ->toolbarActions([]);
     }

@@ -60,7 +60,6 @@ class TankBoard extends TableWidget
                 TextColumn::make('status')
                     ->badge(),
             ])
-            ->paginated(false)
             ->selectable(false);
     }
 }

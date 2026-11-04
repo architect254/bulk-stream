@@ -57,7 +57,6 @@ class InventoryMovementsTable
                     ->getOptionLabelFromRecordUsing(fn (\App\Models\Commodity $record): string => $record->code->value),
             ])
             ->recordActions([])
-            ->paginated(false)
             ->selectable(false)
             ->toolbarActions([]);
     }
