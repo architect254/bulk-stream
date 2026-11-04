@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InventoryMovements\Schemas;
 
+use App\Filament\Support\Quantity;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -12,35 +13,39 @@ class InventoryMovementInfolist
         return $schema
             ->components([
                 TextEntry::make('reference')
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('tank.code')
-                    ->label('Tank')
                     ->label('Tank'),
-                TextEntry::make('commodity.name')
+                TextEntry::make('commodity.code')
                     ->label('Commodity'),
                 TextEntry::make('movement_type')
                     ->badge(),
                 TextEntry::make('quantity')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
+                    ->label('Quantity (MT)')
+                    ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
                 TextEntry::make('balance_before')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
+                    ->label('Balance before (MT)')
+                    ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
                 TextEntry::make('balance_after')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
+                    ->label('Balance after (MT)')
+                    ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
                 TextEntry::make('source_type')
-                    ->placeholder('-'),
+                    ->label('Source type')
+                    ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '—')
+                    ->placeholder('—'),
                 TextEntry::make('source_id')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-')
-                    ->placeholder('-'),
+                    ->label('Source ID')
+                    ->placeholder('—'),
                 TextEntry::make('idempotency_key')
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('occurred_at')
                     ->dateTime(),
                 TextEntry::make('created_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('updated_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
             ]);
     }
 }

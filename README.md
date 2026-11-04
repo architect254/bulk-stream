@@ -67,6 +67,23 @@ Those actions enforce domain rules, transactions, row locking, idempotency, and 
 
 Assessment assumption: each `DischargeLog` represents an individual cargo event whose gross mass contributes to total discharge gross. This is an assessment modelling assumption, not an externally verified terminal standard.
 
+## Dashboard
+
+The dashboard is a read-only terminal operations overview. It reports:
+
+- cargo received and dispatched today;
+- current inventory and available capacity by commodity;
+- the vessel → discharge → storage → truck flow;
+- a tank board with current balance, capacity and utilization;
+- pending or inconsistent operations that need attention;
+- the latest inventory movements.
+
+"Today" uses the `Africa/Nairobi` day boundary. Totals only include completed
+discharges (`completed_at`) and completed truck dispatches (`dispatched_at`);
+draft, planned and failed records are excluded from completed mass totals.
+Dashboard queries live in `App\Application\Dashboard\TerminalDashboardReadModel`
+and never mutate operational records.
+
 ## Setup
 
 ### Prerequisites
@@ -134,14 +151,24 @@ The test suite covers:
 - Idempotency
 - Filament interface integration
 
+The dashboard tests also cover the read model aggregates, the Nairobi reporting
+day boundary, read-only behaviour, pending-work classification and Filament
+rendering of the terminal overview.
+
 Final verified results:
 
 ```text
 php artisan test
-# 67 tests, 158 assertions, passed
+# 107 tests, 421 assertions, passed
 
 npm run build
 # success
+
+php artisan migrate:fresh --seed
+# success
+
+php artisan route:list
+# 36 routes
 ```
 
 ## Known Limitations

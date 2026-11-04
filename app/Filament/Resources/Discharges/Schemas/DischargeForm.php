@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Discharges\Schemas;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Domain\Cargo\Services\TransitLossCalculator;
 use App\Enums\DischargeStatus;
+use App\Filament\Support\Quantity;
 use App\Models\Tank;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
@@ -57,7 +58,7 @@ class DischargeForm
                                 '%s — %s — %s MT available',
                                 $tank->code,
                                 $tank->commodity->code->value,
-                                DecimalMath::subtract((string) $tank->capacity, (string) $tank->current_quantity)
+                                Quantity::mass(DecimalMath::subtract((string) $tank->capacity, (string) $tank->current_quantity))
                             )),
                         Select::make('status')
                             ->options(DischargeStatus::class)
@@ -100,22 +101,22 @@ class DischargeForm
                     ->schema([
                         Placeholder::make('total_gross')
                             ->label('Total gross mass')
-                            ->content(fn (Get $get): string => self::totalGross($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::totalGross($get)) . ' MT'),
                         Placeholder::make('estimated_loss')
                             ->label('Estimated transit loss (0.5%)')
-                            ->content(fn (Get $get): string => self::estimatedLoss($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::estimatedLoss($get)) . ' MT'),
                         Placeholder::make('estimated_net')
                             ->label('Estimated net received')
-                            ->content(fn (Get $get): string => self::estimatedNet($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::estimatedNet($get)) . ' MT'),
                         Placeholder::make('tank_current')
                             ->label('Current tank balance')
-                            ->content(fn (Get $get): string => self::tankCurrent($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::tankCurrent($get)) . ' MT'),
                         Placeholder::make('remaining_capacity')
                             ->label('Remaining tank capacity')
-                            ->content(fn (Get $get): string => self::remainingCapacity($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::remainingCapacity($get)) . ' MT'),
                         Placeholder::make('projected_balance')
                             ->label('Projected balance after receipt')
-                            ->content(fn (Get $get): string => self::projectedBalance($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::projectedBalance($get)) . ' MT'),
                     ])
                     ->columns(3),
             ]);

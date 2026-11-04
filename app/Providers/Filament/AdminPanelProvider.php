@@ -6,11 +6,13 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use App\Filament\Widgets\OperationalExceptions;
+use App\Filament\Widgets\OperationalFlow;
 use App\Filament\Widgets\RecentMovements;
 use App\Filament\Widgets\TankBoard;
 use App\Filament\Widgets\TerminalOverview;
@@ -47,7 +49,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 TerminalOverview::class,
+                OperationalFlow::class,
                 TankBoard::class,
+                OperationalExceptions::class,
                 RecentMovements::class,
             ])
             ->middleware([

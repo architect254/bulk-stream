@@ -3,63 +3,76 @@
 namespace App\Filament\Widgets;
 
 use App\Domain\Cargo\Support\DecimalMath;
+use App\Filament\Resources\Tanks\TankResource;
+use App\Filament\Support\Quantity;
+use App\Filament\Tables\Columns\MassColumn;
 use App\Models\Tank;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class TankBoard extends TableWidget
 {
-    protected static ?string $heading = 'Tank board';
+    protected static ?bool $isLazyLoaded = false;
+
+    protected static ?int $sort = 30;
 
     protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(Tank::query()->with('commodity'))
+            ->query(Tank::query()->active()->with('commodity')->orderBy('code'))
+            ->heading('Tank inventory')
             ->columns([
                 TextColumn::make('code')
                     ->label('Tank')
+                    ->weight('medium')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('commodity.name')
+                TextColumn::make('commodity.code')
                     ->label('Commodity')
                     ->sortable(),
-                TextColumn::make('current_quantity')
+                MassColumn::make('current_quantity')
                     ->label('Current (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
                     ->sortable(),
-                TextColumn::make('capacity')
+                MassColumn::make('capacity')
                     ->label('Capacity (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
                     ->sortable(),
-                TextColumn::make('remaining')
-                    ->label('Remaining (MT)')
-                    ->state(fn (Tank $record): string => DecimalMath::subtract((string) $record->capacity, (string) $record->current_quantity))
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ,
-                TextColumn::make('utilization')
-                    ->label('Utilization')
+                MassColumn::make('available_quantity')
+                    ->label('Available (MT)')
                     ->state(function (Tank $record): string {
-                        $capacityMinor = DecimalMath::toMinorUnits((string) $record->capacity);
+                        $available = DecimalMath::toMinorUnits((string) $record->capacity)
+                            - DecimalMath::toMinorUnits((string) $record->current_quantity);
 
-                        if ($capacityMinor === 0) {
-                            return '0.00';
-                        }
+                        return DecimalMath::fromMinorUnits(max(0, $available));
+                    }),
+                ViewColumn::make('utilization')
+                    ->label('Utilization')
+                    ->state(function (Tank $record): array {
+                        $basisPoints = Quantity::utilizationBasisPoints(
+                            (string) $record->current_quantity,
+                            (string) $record->capacity,
+                        );
 
-                        $percent = intdiv(DecimalMath::toMinorUnits((string) $record->current_quantity) * 10000, $capacityMinor);
-
-                        return number_format($percent / 100, 2);
+                        return [
+                            'percent' => Quantity::percent($basisPoints),
+                            'width' => max(0, min(100, $basisPoints / 100)),
+                        ];
                     })
-                    ->suffix('%')
-                    ->color(fn (string $state): string => (float) $state >= 90 ? 'danger' : ((float) $state >= 75 ? 'warning' : 'success')),
+                    ->view('filament.tables.columns.utilization-bar'),
                 TextColumn::make('status')
-                    ->badge(),
+                    ->badge()
+                    ->sortable(),
             ])
-            ->selectable(false);
+            ->recordUrl(fn (Tank $record): string => TankResource::getUrl('view', ['record' => $record]))
+            ->defaultSort('code')
+            ->selectable(false)
+            ->recordActions([])
+            ->emptyStateHeading('No active tanks')
+            ->emptyStateDescription('Active storage tanks will appear here once they are configured.')
+            ->emptyStateIcon(Heroicon::OutlinedCube);
     }
 }

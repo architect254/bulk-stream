@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Vessels\Tables;
 
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -38,7 +41,13 @@ class VesselsTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->selectable(false)
-            ->toolbarActions([]);
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->emptyStateHeading('No vessels registered')
+            ->emptyStateDescription('Register a vessel to begin an inbound discharge operation.')
+            ->emptyStateIcon(Heroicon::OutlinedBuildingOffice);
     }
 }
