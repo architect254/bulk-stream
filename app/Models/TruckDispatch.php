@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Domain\Cargo\Exceptions\InvalidCargoState;
 use App\Enums\TruckDispatchStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class TruckDispatch extends Model
 {
@@ -44,13 +46,19 @@ class TruckDispatch extends Model
     {
         return $this->belongsTo(Tank::class);
     }
+
     protected static function booted(): void
     {
+        static::creating(function (self $dispatch): void {
+            if (blank($dispatch->reference)) {
+                $dispatch->reference = 'TRK-'.now()->format('Y').'-'.Str::upper(Str::random(8));
+            }
+        });
+
         static::deleting(function (self $dispatch): void {
-            if ($dispatch->status === \App\Enums\TruckDispatchStatus::Dispatched) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Dispatched truck deliveries cannot be deleted.');
+            if ($dispatch->status === TruckDispatchStatus::Dispatched) {
+                throw new InvalidCargoState('Dispatched truck deliveries cannot be deleted.');
             }
         });
     }
-
 }
