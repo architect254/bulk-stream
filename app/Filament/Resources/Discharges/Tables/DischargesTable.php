@@ -113,7 +113,6 @@ class DischargesTable
                         }
                     }),
             ])
-            ->paginated(false)
             ->selectable(false)
             ->toolbarActions([]);
     }

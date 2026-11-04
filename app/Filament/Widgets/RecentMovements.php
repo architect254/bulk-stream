@@ -40,7 +40,6 @@ class RecentMovements extends TableWidget
                     ->label('After (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
             ])
-            ->paginated(false)
             ->selectable(false);
     }
 }
