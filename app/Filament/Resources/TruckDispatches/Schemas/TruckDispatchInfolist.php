@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TruckDispatches\Schemas;
 
+use App\Filament\Support\Quantity;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -12,28 +13,30 @@ class TruckDispatchInfolist
         return $schema
             ->components([
                 TextEntry::make('reference'),
-                TextEntry::make('truck_registration'),
-                TextEntry::make('driver_name'),
-                TextEntry::make('commodity.name')
+                TextEntry::make('truck_registration')
+                    ->label('Truck registration'),
+                TextEntry::make('driver_name')
+                    ->label('Driver name'),
+                TextEntry::make('commodity.code')
                     ->label('Commodity'),
                 TextEntry::make('tank.code')
-                    ->label('Tank')
                     ->label('Tank'),
                 TextEntry::make('quantity')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
+                    ->label('Quantity (MT)')
+                    ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
                 TextEntry::make('status')
                     ->badge(),
                 TextEntry::make('dispatched_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('idempotency_key')
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('created_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('updated_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
             ]);
     }
 }

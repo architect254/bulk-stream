@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\Tanks\Tables;
 
 use App\Domain\Cargo\Support\DecimalMath;
+use App\Filament\Support\Quantity;
+use App\Filament\Tables\Columns\MassColumn;
 use App\Models\Tank;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -23,36 +26,29 @@ class TanksTable
                 TextColumn::make('commodity.code')
                     ->label('Commodity')
                     ->sortable(),
-                TextColumn::make('current_quantity')
+                MassColumn::make('current_quantity')
                     ->label('Current (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
                     ->sortable(),
-                TextColumn::make('capacity')
+                MassColumn::make('capacity')
                     ->label('Capacity (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
                     ->sortable(),
-                TextColumn::make('remaining')
-                    ->label('Remaining (MT)')
-                    ->state(fn (Tank $record): string => DecimalMath::subtract((string) $record->capacity, (string) $record->current_quantity))
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ,
+                MassColumn::make('available_quantity')
+                    ->label('Available (MT)')
+                    ->state(function (Tank $record): string {
+                        $available = DecimalMath::toMinorUnits((string) $record->capacity)
+                            - DecimalMath::toMinorUnits((string) $record->current_quantity);
+
+                        return DecimalMath::fromMinorUnits(max(0, $available));
+                    }),
                 TextColumn::make('utilization')
                     ->label('Utilization')
-                    ->state(function (Tank $record): string {
-                        $capacityMinor = DecimalMath::toMinorUnits((string) $record->capacity);
-
-                        if ($capacityMinor === 0) {
-                            return '0.00';
-                        }
-
-                        $percent = intdiv(DecimalMath::toMinorUnits((string) $record->current_quantity) * 10000, $capacityMinor);
-
-                        return number_format($percent / 100, 2);
-                    })
-                    ->suffix('%')
-                    ->color(fn (string $state): string => (float) $state >= 90 ? 'danger' : ((float) $state >= 75 ? 'warning' : 'success')),
+                    ->state(fn (Tank $record): string => Quantity::utilizationPercent(
+                        (string) $record->current_quantity,
+                        (string) $record->capacity,
+                    ))
+                    ->alignEnd()
+                    ->extraAttributes(['class' => 'tabular-nums'])
+                    ->suffix('%'),
                 TextColumn::make('status')
                     ->badge(),
             ])
@@ -66,7 +62,9 @@ class TanksTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->selectable(false)
-            ->toolbarActions([]);
+            ->toolbarActions([])
+            ->emptyStateHeading('No tanks configured')
+            ->emptyStateDescription('Create a storage tank before receiving inbound cargo.')
+            ->emptyStateIcon(Heroicon::OutlinedCube);
     }
 }

@@ -31,4 +31,15 @@ class Vessel extends Model
     {
         return $this->hasMany(Discharge::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $vessel): void {
+            if ($vessel->discharges()->exists()) {
+                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState(
+                    'Vessels with discharge history cannot be deleted.'
+                );
+            }
+        });
+    }
 }

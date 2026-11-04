@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\InventoryMovements\Tables;
 
+use App\Filament\Tables\Columns\MassColumn;
 use App\Models\InventoryMovement;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -28,19 +30,16 @@ class InventoryMovementsTable
                 TextColumn::make('commodity.code')
                     ->label('Commodity')
                     ->sortable(),
-                TextColumn::make('quantity')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
+                MassColumn::make('quantity')
+                    ->label('Quantity (MT)')
                     ->sortable(),
-                TextColumn::make('balance_before')
-                    ->label('Before (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
-                TextColumn::make('balance_after')
-                    ->label('After (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
+                MassColumn::make('balance_before')
+                    ->label('Before (MT)'),
+                MassColumn::make('balance_after')
+                    ->label('After (MT)'),
                 TextColumn::make('source_type')
                     ->label('Source')
-                    ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '-'),
+                    ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '—'),
             ])
             ->filters([
                 SelectFilter::make('movement_type')
@@ -57,7 +56,9 @@ class InventoryMovementsTable
                     ->getOptionLabelFromRecordUsing(fn (\App\Models\Commodity $record): string => $record->code->value),
             ])
             ->recordActions([])
-            ->selectable(false)
-            ->toolbarActions([]);
+            ->toolbarActions([])
+            ->emptyStateHeading('No inventory movements')
+            ->emptyStateDescription('Movements are recorded automatically when cargo is received or dispatched.')
+            ->emptyStateIcon(Heroicon::OutlinedClipboardDocumentList);
     }
 }

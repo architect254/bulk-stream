@@ -4,12 +4,14 @@ namespace App\Filament\Resources\TruckDispatches\Tables;
 
 use App\Actions\ProcessTruckDispatch;
 use App\Enums\TruckDispatchStatus;
+use App\Filament\Tables\Columns\MassColumn;
 use App\Models\TruckDispatch;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -37,17 +39,15 @@ class TruckDispatchesTable
                 TextColumn::make('tank.code')
                     ->label('Tank')
                     ->sortable(),
-                TextColumn::make('quantity')
+                MassColumn::make('quantity')
                     ->label('Quantity (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
                 TextColumn::make('dispatched_at')
                     ->dateTime()
-                    ->placeholder('-')
+                    ->placeholder('—')
                     ->sortable(),
             ])
             ->filters([
@@ -98,7 +98,9 @@ class TruckDispatchesTable
                         }
                     }),
             ])
-            ->selectable(false)
-            ->toolbarActions([]);
+            ->toolbarActions([])
+            ->emptyStateHeading('No truck dispatches')
+            ->emptyStateDescription('Plan a truck dispatch to release cargo from a storage tank.')
+            ->emptyStateIcon(Heroicon::OutlinedTruck);
     }
 }

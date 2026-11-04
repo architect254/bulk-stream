@@ -2,34 +2,66 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Discharge;
-use App\Models\Tank;
-use App\Models\TruckDispatch;
+use App\Application\Dashboard\TerminalDashboardReadModel;
+use App\Filament\Support\Quantity;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
-use App\Domain\Cargo\Support\DecimalMath;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class TerminalOverview extends StatsOverviewWidget
 {
+    protected static ?bool $isLazyLoaded = false;
+
+    protected static ?int $sort = 10;
+
     protected function getStats(): array
     {
-        $inventory = (string) Tank::query()->active()->sum('current_quantity');
-        $capacity = (string) Tank::query()->active()->sum('capacity');
-        $remaining = DecimalMath::subtract($capacity, $inventory);
+        $dashboard = app(TerminalDashboardReadModel::class);
+
+        $received = $dashboard->todayReceived();
+        $dispatched = $dashboard->todayDispatched();
+        $inventory = $dashboard->inventory();
+
+        $commodityBreakdown = collect($inventory['by_commodity'])
+            ->map(fn (string $quantity, string $code): string => $code.' '.Quantity::mass($quantity))
+            ->implode(' · ');
 
         return [
-            Stat::make('Stored inventory', number_format((float) $inventory, 3) . ' MT')
-                ->description('Current quantity across all tanks')
+            Stat::make('Received today (MT)', Quantity::mass($received['net_received_mass']))
+                ->description($received['operations'] === 0
+                    ? 'No completed inbound discharges today'
+                    : sprintf(
+                        '%s MT gross · %s MT transit loss · %d completed discharge%s',
+                        Quantity::mass($received['gross_mass']),
+                        Quantity::mass($received['transit_loss_mass']),
+                        $received['operations'],
+                        $received['operations'] === 1 ? '' : 's',
+                    ))
+                ->descriptionIcon(Heroicon::OutlinedArrowDownTray)
                 ->color('success'),
-            Stat::make('Available capacity', number_format((float) $remaining, 3) . ' MT')
-                ->description('Remaining storage capacity')
-                ->color('primary'),
-            Stat::make('Completed discharges', (string) Discharge::query()->where('status', 'completed')->count())
-                ->description('Inbound cargo operations completed')
+            Stat::make('Dispatched today (MT)', Quantity::mass($dispatched['quantity']))
+                ->description($dispatched['operations'] === 0
+                    ? 'No completed truck dispatches today'
+                    : sprintf(
+                        '%d completed truck dispatch%s',
+                        $dispatched['operations'],
+                        $dispatched['operations'] === 1 ? '' : 'es',
+                    ))
+                ->descriptionIcon(Heroicon::OutlinedTruck)
                 ->color('info'),
-            Stat::make('Completed dispatches', (string) TruckDispatch::query()->where('status', 'dispatched')->count())
-                ->description('Truck deliveries completed')
-                ->color('warning'),
+            Stat::make('Current inventory (MT)', Quantity::mass($inventory['current_quantity']))
+                ->description($commodityBreakdown)
+                ->descriptionIcon(Heroicon::OutlinedCube)
+                ->color('primary'),
+            Stat::make('Available capacity (MT)', Quantity::mass($inventory['available_capacity']))
+                ->description(sprintf(
+                    'of %s MT installed across %d active tank%s',
+                    Quantity::mass($inventory['capacity']),
+                    $inventory['tanks'],
+                    $inventory['tanks'] === 1 ? '' : 's',
+                ))
+                ->descriptionIcon(Heroicon::OutlinedArrowsPointingIn)
+                ->color('gray'),
         ];
     }
 }

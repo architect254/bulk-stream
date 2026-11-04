@@ -4,12 +4,14 @@ namespace App\Filament\Resources\Discharges\Tables;
 
 use App\Actions\ProcessInboundDischarge;
 use App\Enums\DischargeStatus;
+use App\Filament\Tables\Columns\MassColumn;
 use App\Models\Discharge;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -38,28 +40,22 @@ class DischargesTable
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
-                TextColumn::make('gross_mass')
+                MassColumn::make('gross_mass')
                     ->label('Gross (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
-                    ->placeholder('-'),
-                TextColumn::make('transit_loss_mass')
+                    ->placeholder('—'),
+                MassColumn::make('transit_loss_mass')
                     ->label('Loss (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
-                    ->placeholder('-'),
-                TextColumn::make('net_received_mass')
+                    ->placeholder('—'),
+                MassColumn::make('net_received_mass')
                     ->label('Net (MT)')
-                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextColumn::make('started_at')
                     ->dateTime()
-                    ->placeholder('-')
+                    ->placeholder('—')
                     ->toggleable(),
                 TextColumn::make('completed_at')
                     ->dateTime()
-                    ->placeholder('-')
+                    ->placeholder('—')
                     ->toggleable(),
             ])
             ->filters([
@@ -113,7 +109,9 @@ class DischargesTable
                         }
                     }),
             ])
-            ->selectable(false)
-            ->toolbarActions([]);
+            ->toolbarActions([])
+            ->emptyStateHeading('No inbound discharges')
+            ->emptyStateDescription('Create a discharge to post vessel cargo into a storage tank.')
+            ->emptyStateIcon(Heroicon::OutlinedArrowDownTray);
     }
 }

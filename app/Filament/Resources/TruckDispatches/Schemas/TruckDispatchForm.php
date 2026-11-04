@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TruckDispatches\Schemas;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\TankStatus;
 use App\Enums\TruckDispatchStatus;
+use App\Filament\Support\Quantity;
 use App\Models\Tank;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -47,7 +48,7 @@ class TruckDispatchForm
                                 '%s — %s — %s MT available',
                                 $tank->code,
                                 $tank->commodity->code->value,
-                                (string) $tank->current_quantity
+                                Quantity::mass((string) $tank->current_quantity)
                             )),
                         Select::make('commodity_id')
                             ->relationship('commodity', 'name')
@@ -74,13 +75,13 @@ class TruckDispatchForm
                     ->schema([
                         Placeholder::make('current_stock')
                             ->label('Current tank inventory')
-                            ->content(fn (Get $get): string => self::currentStock($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::currentStock($get)) . ' MT'),
                         Placeholder::make('requested_quantity')
                             ->label('Requested quantity')
-                            ->content(fn (Get $get): string => self::requestedQuantity($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::requestedQuantity($get)) . ' MT'),
                         Placeholder::make('projected_remaining')
                             ->label('Projected remaining inventory')
-                            ->content(fn (Get $get): string => self::projectedRemaining($get) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::projectedRemaining($get)) . ' MT'),
                         Placeholder::make('feasibility')
                             ->label('Appears feasible')
                             ->content(fn (Get $get): string => self::feasible($get) ? 'Yes' : 'No'),

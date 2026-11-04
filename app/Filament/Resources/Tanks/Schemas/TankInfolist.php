@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tanks\Schemas;
 
+use App\Filament\Support\Quantity;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -11,21 +12,24 @@ class TankInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('code'),
-                TextEntry::make('commodity.name')
+                TextEntry::make('code')
+                    ->label('Tank'),
+                TextEntry::make('commodity.code')
                     ->label('Commodity'),
                 TextEntry::make('capacity')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
+                    ->label('Capacity (MT)')
+                    ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
                 TextEntry::make('current_quantity')
-                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? number_format((float) $state, 3) : '-'),
+                    ->label('Current inventory (MT)')
+                    ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
                 TextEntry::make('status')
                     ->badge(),
                 TextEntry::make('created_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
                 TextEntry::make('updated_at')
                     ->dateTime()
-                    ->placeholder('-'),
+                    ->placeholder('—'),
             ]);
     }
 }
