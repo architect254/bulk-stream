@@ -9,6 +9,7 @@ use App\Domain\Cargo\Policies\InventoryAvailabilityPolicy;
 use App\Domain\Cargo\Policies\StateTransitionPolicy;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\InventoryMovementType;
+use App\Enums\TankStatus;
 use App\Enums\TruckDispatchStatus;
 use App\Models\InventoryMovement;
 use App\Models\Tank;
@@ -57,6 +58,9 @@ class ProcessTruckDispatch
 
             $key = $idempotencyKey ?? $dispatch->idempotency_key ?? 'outbound-truck-dispatch:' . $dispatch->id;
 
+            $dispatch->idempotency_key = $key;
+            $dispatch->reference = $dispatch->reference ?: 'DSP-' . now()->format('Y') . '-' . $dispatch->id;
+
             if (InventoryMovement::query()->where('idempotency_key', $key)->exists()) {
                 throw new DuplicateCargoOperation();
             }
@@ -65,10 +69,16 @@ class ProcessTruckDispatch
                 ->lockForUpdate()
                 ->findOrFail($dispatch->tank_id);
 
+            if ($tank->status !== TankStatus::Active) {
+                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState(
+                    sprintf('Tank %s is inactive and cannot be dispatched from.', $tank->code)
+                );
+            }
+
             if ($tank->commodity_id !== $dispatch->commodity_id) {
                 throw new \App\Domain\Cargo\Exceptions\CommodityMismatch(
-                    expected: (string) $dispatch->commodity_id,
-                    actual: (string) $tank->commodity_id,
+                    expected: $dispatch->commodity->code->value,
+                    actual: $tank->commodity->code->value,
                 );
             }
 

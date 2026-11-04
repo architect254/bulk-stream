@@ -23,6 +23,11 @@ class TruckDispatchResource extends Resource
     {
         return $record->status !== \App\Enums\TruckDispatchStatus::Dispatched && $record->status !== \App\Enums\TruckDispatchStatus::Cancelled;
     }
+
+    public static function canDelete($record): bool
+    {
+        return $record->status !== \App\Enums\TruckDispatchStatus::Dispatched;
+    }
     protected static ?string $model = TruckDispatch::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;

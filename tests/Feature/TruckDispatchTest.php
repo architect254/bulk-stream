@@ -81,9 +81,19 @@ class TruckDispatchTest extends TestCase
 
     public function test_commodity_mismatch_is_rejected(): void
     {
-        $dispatch = $this->makeDispatch(10);
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
         $otherCommodity = Commodity::factory()->create(['code' => CommodityCode::CPOL]);
-        $dispatch->tank->update(['commodity_id' => $otherCommodity->id]);
+        $tank = Tank::factory()->create([
+            'commodity_id' => $otherCommodity->id,
+            'capacity' => 1000,
+            'current_quantity' => 100,
+        ]);
+        $dispatch = TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'quantity' => 10,
+            'status' => TruckDispatchStatus::Planned,
+        ]);
 
         $this->expectException(CommodityMismatch::class);
 

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TruckDispatches\Schemas;
 
 use App\Domain\Cargo\Support\DecimalMath;
+use App\Enums\TankStatus;
 use App\Enums\TruckDispatchStatus;
 use App\Models\Tank;
 use Filament\Forms\Components\Placeholder;
@@ -10,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class TruckDispatchForm
@@ -20,9 +22,6 @@ class TruckDispatchForm
             ->components([
                 Section::make('Dispatch')
                     ->schema([
-                        TextInput::make('reference')
-                            ->required()
-                            ->maxLength(255),
                         TextInput::make('truck_registration')
                             ->label('Truck registration')
                             ->required()
@@ -31,18 +30,32 @@ class TruckDispatchForm
                             ->label('Driver name')
                             ->required()
                             ->maxLength(255),
+                        Select::make('tank_id')
+                            ->relationship(
+                                name: 'tank',
+                                titleAttribute: 'code',
+                                modifyQueryUsing: fn ($query) => $query->where('status', TankStatus::Active)
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                $set('commodity_id', Tank::find($state)?->commodity_id);
+                            })
+                            ->getOptionLabelFromRecordUsing(fn (Tank $tank): string => sprintf(
+                                '%s — %s — %s MT available',
+                                $tank->code,
+                                $tank->commodity->code->value,
+                                (string) $tank->current_quantity
+                            )),
                         Select::make('commodity_id')
                             ->relationship('commodity', 'name')
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->live(),
-                        Select::make('tank_id')
-                            ->relationship('tank', 'code')
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->live(),
+                            ->disabled()
+                            ->dehydrated(),
                         TextInput::make('quantity')
                             ->label('Quantity (MT)')
                             ->numeric()
@@ -54,8 +67,6 @@ class TruckDispatchForm
                             ->default(TruckDispatchStatus::Planned)
                             ->disabled()
                             ->dehydrated(false),
-                        TextInput::make('idempotency_key')
-                            ->default(null),
                     ])
                     ->columns(2),
 

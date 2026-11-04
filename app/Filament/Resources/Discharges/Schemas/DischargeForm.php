@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Discharges\Schemas;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Domain\Cargo\Services\TransitLossCalculator;
 use App\Enums\DischargeStatus;
-use App\Enums\VesselStatus;
 use App\Models\Tank;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
@@ -24,9 +23,6 @@ class DischargeForm
             ->components([
                 Section::make('Discharge')
                     ->schema([
-                        TextInput::make('reference')
-                            ->required()
-                            ->maxLength(255),
                         Select::make('vessel_id')
                             ->relationship('vessel', 'name')
                             ->searchable()
@@ -40,11 +36,29 @@ class DischargeForm
                             ->required()
                             ->live(),
                         Select::make('tank_id')
-                            ->relationship('tank', 'code')
+                            ->relationship(
+                                name: 'tank',
+                                titleAttribute: 'code',
+                                modifyQueryUsing: function ($query, Get $get) {
+                                    $query->where('status', \App\Enums\TankStatus::Active);
+
+                                    if ($commodityId = $get('commodity_id')) {
+                                        $query->where('commodity_id', $commodityId);
+                                    }
+
+                                    return $query;
+                                }
+                            )
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->getOptionLabelFromRecordUsing(fn (Tank $tank): string => sprintf(
+                                '%s — %s — %s MT available',
+                                $tank->code,
+                                $tank->commodity->code->value,
+                                DecimalMath::subtract((string) $tank->capacity, (string) $tank->current_quantity)
+                            )),
                         Select::make('status')
                             ->options(DischargeStatus::class)
                             ->default(DischargeStatus::Draft)
