@@ -2,10 +2,14 @@
 
 namespace App\Filament\Resources\Vessels\Tables;
 
+use App\Enums\VesselStatus;
+use App\Models\Vessel;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -35,11 +39,32 @@ class VesselsTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options(\App\Enums\VesselStatus::class),
+                    ->options(VesselStatus::class),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('markArriving')
+                    ->label('Mark arriving')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('info')
+                    ->visible(fn (Vessel $record): bool => $record->status === VesselStatus::Scheduled)
+                    ->action(function (Vessel $record): void {
+                        try {
+                            $record->markAsArriving();
+
+                            Notification::make()
+                                ->title('Vessel marked as arriving')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $exception) {
+                            Notification::make()
+                                ->title('Status change failed')
+                                ->body($exception->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
