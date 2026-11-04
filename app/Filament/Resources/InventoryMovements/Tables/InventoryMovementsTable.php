@@ -30,13 +30,13 @@ class InventoryMovementsTable
                     ->sortable(),
                 TextColumn::make('quantity')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->sortable(),
                 TextColumn::make('balance_before')
-                    ->label('Before')
+                    ->label('Before (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
                 TextColumn::make('balance_after')
-                    ->label('After')
+                    ->label('After (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
                 TextColumn::make('source_type')
                     ->label('Source')
@@ -58,6 +58,7 @@ class InventoryMovementsTable
             ])
             ->recordActions([])
             ->paginated(false)
+            ->selectable(false)
             ->toolbarActions([]);
     }
 }

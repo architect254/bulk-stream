@@ -10,6 +10,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use App\Filament\Widgets\RecentMovements;
 use App\Filament\Widgets\TankBoard;
 use App\Filament\Widgets\TerminalOverview;
@@ -29,10 +30,18 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->brandName('Bulkstream')
+            ->maxContentWidth(Width::Full)
+            ->sidebarCollapsibleOnDesktop()
+            ->navigationGroups(['Operations', 'Inventory'])
             ->login()
             ->colors([
-                'primary' => Color::Teal,
-                'gray' => Color::Slate,
+                'primary' => Color::hex('#0F8B8D'),
+                'gray' => Color::hex('#5B6770'),
+                'success' => Color::Green,
+                'warning' => Color::Amber,
+                'danger' => Color::Red,
+                'info' => Color::Teal,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

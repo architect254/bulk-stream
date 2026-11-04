@@ -24,20 +24,20 @@ class TanksTable
                     ->label('Commodity')
                     ->sortable(),
                 TextColumn::make('current_quantity')
-                    ->label('Current')
+                    ->label('Current (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->sortable(),
                 TextColumn::make('capacity')
-                    ->label('Capacity')
+                    ->label('Capacity (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->sortable(),
                 TextColumn::make('remaining')
-                    ->label('Remaining')
+                    ->label('Remaining (MT)')
                     ->state(fn (Tank $record): string => DecimalMath::subtract((string) $record->capacity, (string) $record->current_quantity))
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT'),
+                    ,
                 TextColumn::make('utilization')
                     ->label('Utilization')
                     ->state(function (Tank $record): string {
@@ -67,6 +67,7 @@ class TanksTable
                 EditAction::make(),
             ])
             ->paginated(false)
+            ->selectable(false)
             ->toolbarActions([]);
     }
 }
