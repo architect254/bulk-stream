@@ -13,6 +13,7 @@ use App\Models\InventoryMovement;
 use App\Models\Tank;
 use App\Models\TruckDispatch;
 use App\Models\Vessel;
+use App\Support\OperationalTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -27,8 +28,6 @@ use Throwable;
  */
 final class TerminalDashboardReadModel
 {
-    public const TIMEZONE = 'Africa/Nairobi';
-
     private ?CarbonImmutable $reportingDate = null;
 
     private ?array $todayReceived = null;
@@ -45,7 +44,7 @@ final class TerminalDashboardReadModel
 
     public function reportingDate(): CarbonImmutable
     {
-        return $this->reportingDate ??= CarbonImmutable::now(self::TIMEZONE);
+        return $this->reportingDate ??= OperationalTime::now();
     }
 
     public function reportingDateLabel(): string

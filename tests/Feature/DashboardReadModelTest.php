@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\ProcessInboundDischarge;
 use App\Actions\ProcessTruckDispatch;
 use App\Application\Dashboard\TerminalDashboardReadModel;
+use App\Support\OperationalTime;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\CommodityCode;
 use App\Enums\DischargeStatus;
@@ -458,7 +459,7 @@ class DashboardReadModelTest extends TestCase
 
     private function freezeAt(string $datetime): void
     {
-        $moment = CarbonImmutable::parse($datetime, TerminalDashboardReadModel::TIMEZONE);
+        $moment = CarbonImmutable::parse($datetime, OperationalTime::timezone());
 
         Carbon::setTestNow($moment);
         CarbonImmutable::setTestNow($moment);
