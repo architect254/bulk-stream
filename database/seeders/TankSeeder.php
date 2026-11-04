@@ -21,15 +21,17 @@ class TankSeeder extends Seeder
         foreach ($tanks as $tank) {
             $commodity = Commodity::where('code', $tank['commodity'])->firstOrFail();
 
-            Tank::updateOrCreate(
+            $tankModel = Tank::updateOrCreate(
                 ['code' => $tank['code']],
                 [
                     'commodity_id' => $commodity->id,
                     'capacity' => $tank['capacity'],
-                    'current_quantity' => 0,
-                    'status' => TankStatus::Active,
                 ],
             );
+
+            $tankModel->current_quantity = 0;
+            $tankModel->status = TankStatus::Active;
+            $tankModel->save();
         }
     }
 }

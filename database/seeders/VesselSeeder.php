@@ -11,10 +11,9 @@ class VesselSeeder extends Seeder
     public function run(): void
     {
         foreach (['MV Ocean Meridian', 'MV Coast Pioneer', 'MV Eastern Horizon'] as $name) {
-            Vessel::updateOrCreate(
-                ['name' => $name],
-                ['status' => VesselStatus::Scheduled],
-            );
+            $vessel = Vessel::updateOrCreate(['name' => $name]);
+            $vessel->status = VesselStatus::Scheduled;
+            $vessel->save();
         }
     }
 }

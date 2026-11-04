@@ -18,9 +18,12 @@ class TruckDispatch extends Model
         'commodity_id',
         'tank_id',
         'quantity',
-        'status',
         'dispatched_at',
         'idempotency_key',
+    ];
+
+    protected $attributes = [
+        'status' => 'planned',
     ];
 
     protected function casts(): array
@@ -41,4 +44,13 @@ class TruckDispatch extends Model
     {
         return $this->belongsTo(Tank::class);
     }
+    protected static function booted(): void
+    {
+        static::deleting(function (self $dispatch): void {
+            if ($dispatch->status === \App\Enums\TruckDispatchStatus::Dispatched) {
+                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Dispatched truck deliveries cannot be deleted.');
+            }
+        });
+    }
+
 }

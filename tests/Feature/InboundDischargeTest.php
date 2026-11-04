@@ -152,9 +152,26 @@ class InboundDischargeTest extends TestCase
 
     public function test_commodity_mismatch_is_rejected(): void
     {
-        $discharge = $this->makeDischarge([100]);
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
         $otherCommodity = Commodity::factory()->create(['code' => CommodityCode::CPOL]);
-        $discharge->tank->update(['commodity_id' => $otherCommodity->id]);
+        $tank = Tank::factory()->create([
+            'commodity_id' => $otherCommodity->id,
+            'capacity' => 1000,
+            'current_quantity' => 0,
+        ]);
+        $vessel = Vessel::factory()->create(['status' => VesselStatus::Arriving]);
+        $discharge = Discharge::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'vessel_id' => $vessel->id,
+            'status' => DischargeStatus::Draft,
+        ]);
+        DischargeLog::factory()->create([
+            'discharge_id' => $discharge->id,
+            'external_event_id' => 'evt-mismatch',
+            'occurred_at' => now()->subMinute(),
+            'gross_mass' => 100,
+        ]);
 
         $this->expectException(CommodityMismatch::class);
 

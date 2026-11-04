@@ -14,6 +14,7 @@ use App\Domain\Cargo\Services\TransitLossCalculator;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Domain\Cargo\ValueObjects\DischargeLogEntry;
 use App\Enums\DischargeStatus;
+use App\Enums\TankStatus;
 use App\Enums\InventoryMovementType;
 use App\Enums\VesselStatus;
 use App\Models\Discharge;
@@ -61,8 +62,8 @@ class ProcessInboundDischarge
 
             if ($discharge->tank->commodity_id !== $discharge->commodity_id) {
                 throw new \App\Domain\Cargo\Exceptions\CommodityMismatch(
-                    expected: (string) $discharge->commodity_id,
-                    actual: (string) $discharge->tank->commodity_id,
+                    expected: $discharge->commodity->code->value,
+                    actual: $discharge->tank->commodity->code->value,
                 );
             }
 
@@ -105,6 +106,9 @@ class ProcessInboundDischarge
 
             $key = $idempotencyKey ?? $discharge->idempotency_key ?? 'inbound-discharge:' . $discharge->id;
 
+            $discharge->idempotency_key = $key;
+            $discharge->reference = $discharge->reference ?: 'DIS-' . now()->format('Y') . '-' . $discharge->id;
+
             if (InventoryMovement::query()->where('idempotency_key', $key)->exists()) {
                 throw new \App\Domain\Cargo\Exceptions\DuplicateCargoOperation();
             }
@@ -112,6 +116,12 @@ class ProcessInboundDischarge
             $tank = Tank::query()
                 ->lockForUpdate()
                 ->findOrFail($discharge->tank_id);
+
+            if ($tank->status !== TankStatus::Active) {
+                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState(
+                    sprintf('Tank %s is inactive and cannot receive cargo.', $tank->code)
+                );
+            }
 
             $this->capacityPolicy->assertCanReceive(
                 (string) $tank->current_quantity,

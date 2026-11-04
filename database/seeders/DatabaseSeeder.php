@@ -15,9 +15,9 @@ class DatabaseSeeder extends Seeder
             TankSeeder::class,
         ]);
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            ['name' => 'Admin', 'password' => 'password']
+        );
     }
 }

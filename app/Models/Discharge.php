@@ -17,13 +17,16 @@ class Discharge extends Model
         'vessel_id',
         'commodity_id',
         'tank_id',
-        'status',
         'gross_mass',
         'transit_loss_mass',
         'net_received_mass',
         'started_at',
         'completed_at',
         'idempotency_key',
+    ];
+
+    protected $attributes = [
+        'status' => 'draft',
     ];
 
     protected function casts(): array
@@ -57,4 +60,20 @@ class Discharge extends Model
     {
         return $this->hasMany(DischargeLog::class);
     }
+    protected static function booted(): void
+    {
+        static::deleting(function (self $discharge): void {
+            if ($discharge->status !== \App\Enums\DischargeStatus::Draft) {
+                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Processed discharges cannot be deleted.');
+            }
+
+            if (\App\Models\InventoryMovement::query()
+                ->where('source_type', self::class)
+                ->where('source_id', $discharge->id)
+                ->exists()) {
+                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Discharges with inventory effects cannot be deleted.');
+            }
+        });
+    }
+
 }

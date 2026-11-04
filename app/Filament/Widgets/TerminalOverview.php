@@ -13,8 +13,8 @@ class TerminalOverview extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
-        $inventory = (string) Tank::query()->sum('current_quantity');
-        $capacity = (string) Tank::query()->sum('capacity');
+        $inventory = (string) Tank::query()->active()->sum('current_quantity');
+        $capacity = (string) Tank::query()->active()->sum('capacity');
         $remaining = DecimalMath::subtract($capacity, $inventory);
 
         return [

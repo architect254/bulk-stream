@@ -14,7 +14,10 @@ class Vessel extends Model
     protected $fillable = [
         'name',
         'voyage_reference',
-        'status',
+    ];
+
+    protected $attributes = [
+        'status' => 'scheduled',
     ];
 
     protected function casts(): array

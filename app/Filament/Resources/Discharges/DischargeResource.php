@@ -21,7 +21,12 @@ class DischargeResource extends Resource
     protected static bool $shouldSkipAuthorization = true;
     public static function canEdit($record): bool
     {
-        return $record->status !== \App\Enums\DischargeStatus::Completed;
+        return $record->status === \App\Enums\DischargeStatus::Draft;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return $record->status === \App\Enums\DischargeStatus::Draft;
     }
     protected static ?string $model = Discharge::class;
 
