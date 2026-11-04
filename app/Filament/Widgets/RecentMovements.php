@@ -16,6 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Illuminate\Database\Eloquent\Model;
 
 class RecentMovements extends TableWidget
 {
@@ -68,14 +69,20 @@ class RecentMovements extends TableWidget
             return (string) $movement->reference;
         }
 
-        if ($movement->source !== null) {
-            $reference = $movement->source->getAttribute('reference');
+        $source = $this->resolveSource($movement);
 
-            return trim(class_basename($movement->source).' '.($reference ?: '#'.$movement->source_id));
+        if ($source !== null) {
+            $reference = $source->getAttribute('reference');
+
+            return trim(class_basename($source).' '.($reference ?: '#'.$movement->source_id));
+        }
+
+        if (filled($movement->source_type) && class_exists((string) $movement->source_type)) {
+            return class_basename((string) $movement->source_type).' #'.$movement->source_id;
         }
 
         if (filled($movement->source_type)) {
-            return class_basename($movement->source_type).' #'.$movement->source_id;
+            return (string) $movement->source_type.' #'.$movement->source_id;
         }
 
         return Quantity::EMPTY;
@@ -83,10 +90,27 @@ class RecentMovements extends TableWidget
 
     private function sourceUrl(InventoryMovement $movement): ?string
     {
+        $source = $this->resolveSource($movement);
+
         return match (true) {
-            $movement->source instanceof Discharge => DischargeResource::getUrl('view', ['record' => $movement->source]),
-            $movement->source instanceof TruckDispatch => TruckDispatchResource::getUrl('view', ['record' => $movement->source]),
+            $source instanceof Discharge => DischargeResource::getUrl('view', ['record' => $source]),
+            $source instanceof TruckDispatch => TruckDispatchResource::getUrl('view', ['record' => $source]),
             default => null,
         };
+    }
+
+    private function resolveSource(InventoryMovement $movement): ?Model
+    {
+        if (blank($movement->source_type) || blank($movement->source_id) || ! class_exists((string) $movement->source_type)) {
+            return null;
+        }
+
+        try {
+            $movement->loadMissing('source');
+
+            return $movement->source;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

@@ -321,7 +321,7 @@ final class TerminalDashboardReadModel
     public function recentMovements(int $limit = 10): Collection
     {
         return $this->recentMovements ??= InventoryMovement::query()
-            ->with(['tank', 'commodity', 'source'])
+            ->with(['tank', 'commodity'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
             ->limit($limit)
