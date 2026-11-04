@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Domain\Cargo\Exceptions\InvalidCargoState;
 use App\Enums\DischargeStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Discharge extends Model
 {
@@ -60,20 +62,26 @@ class Discharge extends Model
     {
         return $this->hasMany(DischargeLog::class);
     }
+
     protected static function booted(): void
     {
+        static::creating(function (self $discharge): void {
+            if (blank($discharge->reference)) {
+                $discharge->reference = 'DIS-'.now()->format('Y').'-'.Str::upper(Str::random(8));
+            }
+        });
+
         static::deleting(function (self $discharge): void {
-            if ($discharge->status !== \App\Enums\DischargeStatus::Draft) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Processed discharges cannot be deleted.');
+            if ($discharge->status !== DischargeStatus::Draft) {
+                throw new InvalidCargoState('Processed discharges cannot be deleted.');
             }
 
-            if (\App\Models\InventoryMovement::query()
+            if (InventoryMovement::query()
                 ->where('source_type', self::class)
                 ->where('source_id', $discharge->id)
                 ->exists()) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Discharges with inventory effects cannot be deleted.');
+                throw new InvalidCargoState('Discharges with inventory effects cannot be deleted.');
             }
         });
     }
-
 }
