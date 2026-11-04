@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\Discharges\Schemas;
 
-use App\Domain\Cargo\Support\DecimalMath;
 use App\Domain\Cargo\Services\TransitLossCalculator;
+use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\DischargeStatus;
+use App\Enums\TankStatus;
 use App\Filament\Support\Quantity;
 use App\Models\Tank;
+use Carbon\Carbon;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -41,7 +43,7 @@ class DischargeForm
                                 name: 'tank',
                                 titleAttribute: 'code',
                                 modifyQueryUsing: function ($query, Get $get) {
-                                    $query->where('status', \App\Enums\TankStatus::Active);
+                                    $query->where('status', TankStatus::Active);
 
                                     if ($commodityId = $get('commodity_id')) {
                                         $query->where('commodity_id', $commodityId);
@@ -80,7 +82,9 @@ class DischargeForm
                                 DateTimePicker::make('occurred_at')
                                     ->label('Occurred at')
                                     ->required()
-                                    ->seconds(false),
+                                    ->seconds(false)
+                                    ->minDate(Carbon::parse('1970-01-01 00:00:00', 'UTC'))
+                                    ->maxDate(now()),
                                 TextInput::make('sequence')
                                     ->maxLength(255),
                                 TextInput::make('gross_mass')
@@ -101,22 +105,22 @@ class DischargeForm
                     ->schema([
                         Placeholder::make('total_gross')
                             ->label('Total gross mass')
-                            ->content(fn (Get $get): string => Quantity::mass(self::totalGross($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::totalGross($get)).' MT'),
                         Placeholder::make('estimated_loss')
                             ->label('Estimated transit loss (0.5%)')
-                            ->content(fn (Get $get): string => Quantity::mass(self::estimatedLoss($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::estimatedLoss($get)).' MT'),
                         Placeholder::make('estimated_net')
                             ->label('Estimated net received')
-                            ->content(fn (Get $get): string => Quantity::mass(self::estimatedNet($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::estimatedNet($get)).' MT'),
                         Placeholder::make('tank_current')
                             ->label('Current tank balance')
-                            ->content(fn (Get $get): string => Quantity::mass(self::tankCurrent($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::tankCurrent($get)).' MT'),
                         Placeholder::make('remaining_capacity')
                             ->label('Remaining tank capacity')
-                            ->content(fn (Get $get): string => Quantity::mass(self::remainingCapacity($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::remainingCapacity($get)).' MT'),
                         Placeholder::make('projected_balance')
                             ->label('Projected balance after receipt')
-                            ->content(fn (Get $get): string => Quantity::mass(self::projectedBalance($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::projectedBalance($get)).' MT'),
                     ])
                     ->columns(3),
             ]);
@@ -144,7 +148,7 @@ class DischargeForm
             return '0.000';
         }
 
-        return (new TransitLossCalculator())->calculate($total)->loss;
+        return (new TransitLossCalculator)->calculate($total)->loss;
     }
 
     protected static function estimatedNet(Get $get): string
@@ -155,7 +159,7 @@ class DischargeForm
             return '0.000';
         }
 
-        return (new TransitLossCalculator())->calculate($total)->net;
+        return (new TransitLossCalculator)->calculate($total)->net;
     }
 
     protected static function tank(Get $get): ?Tank
