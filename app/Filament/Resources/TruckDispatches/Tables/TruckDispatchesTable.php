@@ -38,9 +38,9 @@ class TruckDispatchesTable
                     ->label('Tank')
                     ->sortable(),
                 TextColumn::make('quantity')
-                    ->label('Quantity')
+                    ->label('Quantity (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
@@ -99,6 +99,7 @@ class TruckDispatchesTable
                     }),
             ])
             ->paginated(false)
+            ->selectable(false)
             ->toolbarActions([]);
     }
 }

@@ -71,7 +71,7 @@ Assessment assumption: each `DischargeLog` represents an individual cargo event 
 
 ### Prerequisites
 
-- PHP 8.3+ with PDO MySQL and intl extensions
+- PHP 8.3+ with PDO MySQL and intl extensions (required by Laravel/Filament number formatting)
 - Composer
 - Node.js/npm
 - MySQL or MariaDB

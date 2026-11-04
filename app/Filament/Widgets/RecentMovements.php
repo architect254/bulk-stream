@@ -32,14 +32,15 @@ class RecentMovements extends TableWidget
                     ->label('Commodity'),
                 TextColumn::make('quantity')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT'),
+                    ,
                 TextColumn::make('balance_before')
-                    ->label('Before')
+                    ->label('Before (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
                 TextColumn::make('balance_after')
-                    ->label('After')
+                    ->label('After (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3)),
             ])
-            ->paginated(false);
+            ->paginated(false)
+            ->selectable(false);
     }
 }

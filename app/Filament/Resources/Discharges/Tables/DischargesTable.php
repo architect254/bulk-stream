@@ -39,19 +39,19 @@ class DischargesTable
                     ->badge()
                     ->sortable(),
                 TextColumn::make('gross_mass')
-                    ->label('Gross')
+                    ->label('Gross (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->placeholder('-'),
                 TextColumn::make('transit_loss_mass')
-                    ->label('Loss')
+                    ->label('Loss (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->placeholder('-'),
                 TextColumn::make('net_received_mass')
-                    ->label('Net')
+                    ->label('Net (MT)')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 3))
-                    ->suffix(' MT')
+                    
                     ->placeholder('-'),
                 TextColumn::make('started_at')
                     ->dateTime()
@@ -114,6 +114,7 @@ class DischargesTable
                     }),
             ])
             ->paginated(false)
+            ->selectable(false)
             ->toolbarActions([]);
     }
 }
