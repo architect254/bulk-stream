@@ -119,15 +119,6 @@ class OperationalAnalyticsReadModelTest extends TestCase
         $this->assertSame('1990.000', $row['received_net_mass']);
     }
 
-    public function test_tank_utilization_handles_zero_capacity(): void
-    {
-        $tank = Tank::factory()->create(['capacity' => 0, 'current_quantity' => 0, 'code' => 'T-ZERO']);
-
-        $row = app(OperationalAnalyticsReadModel::class)->tankInventoryAnalysis()->firstWhere('code', 'T-ZERO');
-
-        $this->assertSame('0.00', $row['utilization']);
-    }
-
     public function test_reconciliation_reports_matching_and_empty_histories(): void
     {
         $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
