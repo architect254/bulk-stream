@@ -13,7 +13,7 @@ class CargoFlowChart extends ChartWidget
 
     protected static ?int $sort = 25;
 
-    protected int|string|array $columnSpan = ['default' => 'full', 'lg' => 1];
+    protected int|string|array $columnSpan = 'full';
 
     protected ?string $heading = 'Cargo flow by day';
 

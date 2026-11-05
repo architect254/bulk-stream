@@ -13,7 +13,7 @@ class InventoryByCommodityChart extends ChartWidget
 
     protected static ?int $sort = 26;
 
-    protected int|string|array $columnSpan = ['default' => 'full', 'lg' => 1];
+    protected int|string|array $columnSpan = 'full';
 
     protected ?string $heading = 'Inventory by commodity';
 
