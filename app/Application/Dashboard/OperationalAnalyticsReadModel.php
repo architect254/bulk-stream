@@ -232,35 +232,77 @@ final class OperationalAnalyticsReadModel
      */
     public function reconciliation(): Collection
     {
-        return Tank::query()
-            ->with('commodity')
+        $tanks = Tank::query()
+            ->with(['commodity', 'inventoryMovements'])
             ->orderBy('code')
-            ->get()
-            ->map(function (Tank $tank): array {
-                $movements = $tank->inventoryMovements()->orderBy('occurred_at')->orderBy('id')->get();
-                $reconstructed = '0.000';
+            ->get();
 
+        return $tanks->map(function (Tank $tank): array {
+            $movements = $tank->inventoryMovements
+                ->sortBy([['occurred_at', 'asc'], ['id', 'asc']])
+                ->values();
+
+            $reconstructed = '0.000';
+            $continuous = true;
+            $expectedBefore = '0.000';
+
+            if ($movements->isEmpty()) {
+                $continuous = true;
+            } else {
                 foreach ($movements as $movement) {
+                    try {
+                        $before = DecimalMath::toMinorUnits((string) $movement->balance_before);
+                        $after = DecimalMath::toMinorUnits((string) $movement->balance_after);
+                        $expectedBeforeMinor = DecimalMath::toMinorUnits($expectedBefore);
+                    } catch (\Throwable) {
+                        $continuous = false;
+                        break;
+                    }
+
+                    if ($before !== $expectedBeforeMinor) {
+                        $continuous = false;
+                        break;
+                    }
+
                     if ($movement->movement_type->value === 'inbound') {
                         $reconstructed = DecimalMath::add($reconstructed, (string) $movement->quantity);
                     } else {
                         $reconstructed = DecimalMath::subtract($reconstructed, (string) $movement->quantity);
                     }
+
+                    if ($after !== DecimalMath::toMinorUnits($reconstructed)) {
+                        $continuous = false;
+                        break;
+                    }
+
+                    $expectedBefore = $reconstructed;
                 }
+            }
 
-                $stored = (string) $tank->current_quantity;
-                $difference = DecimalMath::subtract($stored, $reconstructed);
+            $stored = (string) $tank->current_quantity;
+            $difference = DecimalMath::subtract($stored, $reconstructed);
 
-                return [
-                    'code' => $tank->code,
-                    'commodity' => $tank->commodity?->code?->value ?? '—',
-                    'stored_balance' => $this->decimal($stored),
-                    'reconstructed_balance' => $this->decimal($reconstructed),
-                    'difference' => $this->decimal($difference),
-                    'movement_count' => $movements->count(),
-                    'status' => DecimalMath::toMinorUnits($difference) === 0 ? 'Reconciled' : 'Difference',
-                ];
-            });
+            if ($movements->isEmpty()) {
+                $status = DecimalMath::toMinorUnits($stored) === 0 ? 'Reconciled' : 'Unverifiable';
+            } elseif (! $continuous) {
+                $status = 'Unverifiable';
+            } elseif (DecimalMath::toMinorUnits($difference) === 0) {
+                $status = 'Reconciled';
+            } else {
+                $status = 'Discrepancy';
+            }
+
+            return [
+                'code' => $tank->code,
+                'commodity' => $tank->commodity?->code?->value ?? '—',
+                'stored_balance' => $this->decimal($stored),
+                'reconstructed_balance' => $this->decimal($reconstructed),
+                'difference' => $this->decimal($difference),
+                'movement_count' => $movements->count(),
+                'balance_chain_valid' => $continuous,
+                'status' => $status,
+            ];
+        });
     }
 
     /**

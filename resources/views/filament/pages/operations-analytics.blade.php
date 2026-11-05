@@ -48,9 +48,9 @@
                 <div class="mt-1 text-xs text-gray-500">{{ $summary['dispatched']['operations'] }} completed dispatch(es)</div>
             </div>
             <div class="rounded-md border border-gray-200 p-4 dark:border-white/10">
-                <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Pending work</div>
+                <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Current pending work (all periods)</div>
                 <div class="mt-1 text-2xl font-semibold tabular-nums">{{ $summary['pending']['draft_discharges'] + $summary['pending']['processing_discharges'] + $summary['pending']['planned_dispatches'] + $summary['pending']['loading_dispatches'] + $summary['pending']['arriving_vessels'] }}</div>
-                <div class="mt-1 text-xs text-gray-500">{{ $summary['pending']['draft_discharges'] }} draft discharges, {{ $summary['pending']['planned_dispatches'] }} planned dispatches</div>
+                <div class="mt-1 text-xs text-gray-500">Outstanding records; not limited to the selected period.</div>
             </div>
         </div>
     </x-filament::section>
