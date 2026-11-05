@@ -2,7 +2,13 @@
 
 namespace App\Enums;
 
-enum InventoryMovementType: string implements \Filament\Support\Contracts\HasLabel, \Filament\Support\Contracts\HasColor, \Filament\Support\Contracts\HasIcon
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+
+enum InventoryMovementType: string implements HasColor, HasIcon, HasLabel
 {
     case Inbound = 'inbound';
     case Outbound = 'outbound';
@@ -15,7 +21,7 @@ enum InventoryMovementType: string implements \Filament\Support\Contracts\HasLab
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Inbound => 'success',
@@ -23,11 +29,11 @@ enum InventoryMovementType: string implements \Filament\Support\Contracts\HasLab
         };
     }
 
-    public function getIcon(): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable | null
+    public function getIcon(): string|\BackedEnum|Htmlable|null
     {
         return match ($this) {
-            self::Inbound => \Filament\Support\Icons\Heroicon::OutlinedArrowDownTray,
-            self::Outbound => \Filament\Support\Icons\Heroicon::OutlinedArrowUpTray,
+            self::Inbound => Heroicon::OutlinedArrowDownTray,
+            self::Outbound => Heroicon::OutlinedArrowUpTray,
         };
     }
 }

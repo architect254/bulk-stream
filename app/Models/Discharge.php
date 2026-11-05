@@ -63,6 +63,12 @@ class Discharge extends Model
         return $this->hasMany(DischargeLog::class);
     }
 
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'source_id')
+            ->where('source_type', self::class);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $discharge): void {

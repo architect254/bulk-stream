@@ -7,7 +7,7 @@ use App\Domain\Cargo\ValueObjects\DischargeLogEntry;
 class ChronologicalLogSorter
 {
     /**
-     * @param iterable<DischargeLogEntry> $logs
+     * @param  iterable<DischargeLogEntry>  $logs
      * @return list<DischargeLogEntry>
      */
     public function sort(iterable $logs): array

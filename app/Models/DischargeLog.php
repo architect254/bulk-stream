@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Domain\Cargo\Exceptions\InvalidCargoQuantity;
 use App\Domain\Cargo\Exceptions\InvalidCargoState;
 use App\Domain\Cargo\Exceptions\InvalidChronology;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -7,6 +7,7 @@ use App\Enums\TruckDispatchStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class TruckDispatch extends Model
@@ -45,6 +46,12 @@ class TruckDispatch extends Model
     public function tank(): BelongsTo
     {
         return $this->belongsTo(Tank::class);
+    }
+
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'source_id')
+            ->where('source_type', self::class);
     }
 
     protected static function booted(): void

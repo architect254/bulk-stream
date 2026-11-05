@@ -9,6 +9,5 @@ class DischargeLogEntry
         public readonly ?string $sequence = null,
         public readonly ?int $id = null,
         public readonly ?string $externalEventId = null,
-    ) {
-    }
+    ) {}
 }

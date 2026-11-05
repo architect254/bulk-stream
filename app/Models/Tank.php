@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Domain\Cargo\Exceptions\InvalidCargoQuantity;
+use App\Domain\Cargo\Exceptions\InvalidCargoState;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\TankStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -57,11 +59,12 @@ class Tank extends Model
     {
         return DecimalMath::subtract((string) $this->capacity, (string) $this->current_quantity);
     }
+
     protected static function booted(): void
     {
         static::saving(function (self $tank): void {
             if ($tank->isDirty('capacity') && DecimalMath::toMinorUnits((string) $tank->capacity) < DecimalMath::toMinorUnits((string) $tank->current_quantity)) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoQuantity('Capacity cannot be less than current inventory.');
+                throw new InvalidCargoQuantity('Capacity cannot be less than current inventory.');
             }
 
             if ($tank->isDirty('commodity_id') && $tank->exists) {
@@ -71,7 +74,7 @@ class Tank extends Model
                     || $tank->truckDispatches()->exists();
 
                 if ($hasInventory || $hasHistory) {
-                    throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Commodity cannot be changed while the tank has inventory or operational history.');
+                    throw new InvalidCargoState('Commodity cannot be changed while the tank has inventory or operational history.');
                 }
             }
         });
@@ -81,7 +84,7 @@ class Tank extends Model
                 || $tank->inventoryMovements()->exists()
                 || $tank->discharges()->exists()
                 || $tank->truckDispatches()->exists()) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState('Tank cannot be deleted while it has inventory or operational history.');
+                throw new InvalidCargoState('Tank cannot be deleted while it has inventory or operational history.');
             }
         });
     }
@@ -90,5 +93,4 @@ class Tank extends Model
     {
         return $query->where('status', TankStatus::Active);
     }
-
 }

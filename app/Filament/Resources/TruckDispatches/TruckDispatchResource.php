@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\TruckDispatches;
 
+use App\Enums\TruckDispatchStatus;
 use App\Filament\Resources\TruckDispatches\Pages\CreateTruckDispatch;
 use App\Filament\Resources\TruckDispatches\Pages\EditTruckDispatch;
 use App\Filament\Resources\TruckDispatches\Pages\ListTruckDispatches;
 use App\Filament\Resources\TruckDispatches\Pages\ViewTruckDispatch;
+use App\Filament\Resources\TruckDispatches\RelationManagers\ResultingMovementRelationManager;
 use App\Filament\Resources\TruckDispatches\Schemas\TruckDispatchForm;
 use App\Filament\Resources\TruckDispatches\Schemas\TruckDispatchInfolist;
 use App\Filament\Resources\TruckDispatches\Tables\TruckDispatchesTable;
@@ -19,15 +21,17 @@ use Filament\Tables\Table;
 class TruckDispatchResource extends Resource
 {
     protected static bool $shouldSkipAuthorization = true;
+
     public static function canEdit($record): bool
     {
-        return $record->status !== \App\Enums\TruckDispatchStatus::Dispatched && $record->status !== \App\Enums\TruckDispatchStatus::Cancelled;
+        return $record->status !== TruckDispatchStatus::Dispatched && $record->status !== TruckDispatchStatus::Cancelled;
     }
 
     public static function canDelete($record): bool
     {
-        return $record->status !== \App\Enums\TruckDispatchStatus::Dispatched;
+        return $record->status !== TruckDispatchStatus::Dispatched;
     }
+
     protected static ?string $model = TruckDispatch::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
@@ -35,6 +39,7 @@ class TruckDispatchResource extends Resource
     protected static \UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?int $navigationSort = 30;
+
     protected static ?string $navigationLabel = 'Truck dispatches';
 
     public static function form(Schema $schema): Schema
@@ -55,7 +60,7 @@ class TruckDispatchResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ResultingMovementRelationManager::class,
         ];
     }
 

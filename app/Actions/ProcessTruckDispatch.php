@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Domain\Cargo\Exceptions\CommodityMismatch;
 use App\Domain\Cargo\Exceptions\DuplicateCargoOperation;
 use App\Domain\Cargo\Exceptions\InvalidCargoState;
+use App\Domain\Cargo\Exceptions\InvalidStateTransition;
 use App\Domain\Cargo\Policies\InventoryAvailabilityPolicy;
 use App\Domain\Cargo\Policies\StateTransitionPolicy;
 use App\Domain\Cargo\Support\DecimalMath;
@@ -19,10 +20,9 @@ use Illuminate\Support\Facades\DB;
 class ProcessTruckDispatch
 {
     public function __construct(
-        private readonly StateTransitionPolicy $statePolicy = new StateTransitionPolicy(),
-        private readonly InventoryAvailabilityPolicy $availabilityPolicy = new InventoryAvailabilityPolicy(),
-    ) {
-    }
+        private readonly StateTransitionPolicy $statePolicy = new StateTransitionPolicy,
+        private readonly InventoryAvailabilityPolicy $availabilityPolicy = new InventoryAvailabilityPolicy,
+    ) {}
 
     public function execute(TruckDispatch|int $dispatch, ?string $idempotencyKey = null): TruckDispatch
     {
@@ -39,7 +39,7 @@ class ProcessTruckDispatch
             }
 
             if ($dispatch->status === TruckDispatchStatus::Cancelled) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidStateTransition(
+                throw new InvalidStateTransition(
                     'truck dispatch',
                     $dispatch->status->value,
                     TruckDispatchStatus::Dispatched->value,
@@ -56,13 +56,13 @@ class ProcessTruckDispatch
                 $dispatch->save();
             }
 
-            $key = $idempotencyKey ?? $dispatch->idempotency_key ?? 'outbound-truck-dispatch:' . $dispatch->id;
+            $key = $idempotencyKey ?? $dispatch->idempotency_key ?? 'outbound-truck-dispatch:'.$dispatch->id;
 
             $dispatch->idempotency_key = $key;
-            $dispatch->reference = $dispatch->reference ?: 'DSP-' . now()->format('Y') . '-' . $dispatch->id;
+            $dispatch->reference = $dispatch->reference ?: 'DSP-'.now()->format('Y').'-'.$dispatch->id;
 
             if (InventoryMovement::query()->where('idempotency_key', $key)->exists()) {
-                throw new DuplicateCargoOperation();
+                throw new DuplicateCargoOperation;
             }
 
             $tank = Tank::query()
@@ -70,13 +70,13 @@ class ProcessTruckDispatch
                 ->findOrFail($dispatch->tank_id);
 
             if ($tank->status !== TankStatus::Active) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState(
+                throw new InvalidCargoState(
                     sprintf('Tank %s is inactive and cannot be dispatched from.', $tank->code)
                 );
             }
 
             if ($tank->commodity_id !== $dispatch->commodity_id) {
-                throw new \App\Domain\Cargo\Exceptions\CommodityMismatch(
+                throw new CommodityMismatch(
                     expected: $dispatch->commodity->code->value,
                     actual: $tank->commodity->code->value,
                 );

@@ -2,7 +2,13 @@
 
 namespace App\Enums;
 
-enum TankStatus: string implements \Filament\Support\Contracts\HasLabel, \Filament\Support\Contracts\HasColor, \Filament\Support\Contracts\HasIcon
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+
+enum TankStatus: string implements HasColor, HasIcon, HasLabel
 {
     case Active = 'active';
     case Inactive = 'inactive';
@@ -15,7 +21,7 @@ enum TankStatus: string implements \Filament\Support\Contracts\HasLabel, \Filame
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Active => 'success',
@@ -23,11 +29,11 @@ enum TankStatus: string implements \Filament\Support\Contracts\HasLabel, \Filame
         };
     }
 
-    public function getIcon(): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable | null
+    public function getIcon(): string|\BackedEnum|Htmlable|null
     {
         return match ($this) {
-            self::Active => \Filament\Support\Icons\Heroicon::OutlinedCheckCircle,
-            self::Inactive => \Filament\Support\Icons\Heroicon::OutlinedMinusCircle,
+            self::Active => Heroicon::OutlinedCheckCircle,
+            self::Inactive => Heroicon::OutlinedMinusCircle,
         };
     }
 }
