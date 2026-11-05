@@ -86,6 +86,12 @@ and never mutate operational records.
 
 ## Operations analytics
 
+The dashboard includes a cargo-flow chart and an inventory-by-commodity chart.
+The operations analytics page includes received-mass, dispatch-volume, tank
+utilization, and commodity throughput charts.
+
+
+
 The read-only operations analytics page summarizes completed operations over a
 selected reporting period, including:
 
@@ -193,7 +199,7 @@ Final verified results:
 
 ```text
 php artisan test
-# 150 tests, 572 assertions, passed
+# 160 tests, 598 assertions, passed
 
 npm run build
 # success
