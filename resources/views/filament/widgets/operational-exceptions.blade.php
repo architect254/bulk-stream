@@ -1,3 +1,4 @@
+<x-filament-widgets::widget>
 <x-filament::section
     heading="Operational attention"
     description="Pending work and records that need an operator decision."
@@ -61,3 +62,4 @@
         </div>
     @endif
 </x-filament::section>
+</x-filament-widgets::widget>

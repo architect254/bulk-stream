@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\ProcessInboundDischarge;
+use App\Actions\ProcessTruckDispatch;
 use App\Application\Dashboard\OperationalAnalyticsReadModel;
-use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\CommodityCode;
 use App\Enums\DischargeStatus;
+use App\Enums\InventoryMovementType;
+use App\Enums\TankStatus;
 use App\Enums\TruckDispatchStatus;
 use App\Enums\VesselStatus;
 use App\Models\Commodity;
@@ -18,6 +21,7 @@ use App\Models\Vessel;
 use App\Support\OperationalTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OperationalAnalyticsReadModelTest extends TestCase
@@ -51,7 +55,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
             'occurred_at' => now()->subMinute(),
             'gross_mass' => 1000,
         ]);
-        app(\App\Actions\ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
+        app(ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
 
         $dispatch = TruckDispatch::factory()->create([
             'commodity_id' => $commodity->id,
@@ -61,7 +65,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
             'truck_registration' => 'KAA 123A',
             'driver_name' => 'Driver',
         ]);
-        app(\App\Actions\ProcessTruckDispatch::class)->execute($dispatch->fresh(['tank', 'commodity']));
+        app(ProcessTruckDispatch::class)->execute($dispatch->fresh(['tank', 'commodity']));
 
         $readModel = app(OperationalAnalyticsReadModel::class);
         [$start, $end] = $readModel->resolvePeriod('today');
@@ -102,7 +106,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
             'occurred_at' => now()->subSeconds(30),
             'gross_mass' => 1000,
         ]);
-        app(\App\Actions\ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
+        app(ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
 
         $readModel = app(OperationalAnalyticsReadModel::class);
         [$start, $end] = $readModel->resolvePeriod('today');
@@ -141,7 +145,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
         InventoryMovement::factory()->create([
             'tank_id' => $tank->id,
             'commodity_id' => $commodity->id,
-            'movement_type' => \App\Enums\InventoryMovementType::Inbound,
+            'movement_type' => InventoryMovementType::Inbound,
             'quantity' => 100,
             'balance_before' => 0,
             'balance_after' => 100,
@@ -165,7 +169,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
         InventoryMovement::factory()->create([
             'tank_id' => $tank->id,
             'commodity_id' => $commodity->id,
-            'movement_type' => \App\Enums\InventoryMovementType::Inbound,
+            'movement_type' => InventoryMovementType::Inbound,
             'quantity' => 100,
             'balance_before' => 0,
             'balance_after' => 100,
@@ -227,7 +231,6 @@ class OperationalAnalyticsReadModelTest extends TestCase
         $this->assertSame('0.000', $summary['dispatched']['quantity']);
     }
 
-
     public function test_empty_nonzero_history_is_unverifiable(): void
     {
         $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
@@ -250,7 +253,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
         InventoryMovement::factory()->create([
             'tank_id' => $tank->id,
             'commodity_id' => $commodity->id,
-            'movement_type' => \App\Enums\InventoryMovementType::Inbound,
+            'movement_type' => InventoryMovementType::Inbound,
             'quantity' => 100,
             'balance_before' => 0,
             'balance_after' => 100,
@@ -259,7 +262,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
         InventoryMovement::factory()->create([
             'tank_id' => $tank->id,
             'commodity_id' => $commodity->id,
-            'movement_type' => \App\Enums\InventoryMovementType::Outbound,
+            'movement_type' => InventoryMovementType::Outbound,
             'quantity' => 10,
             'balance_before' => 999,
             'balance_after' => 989,
@@ -278,9 +281,9 @@ class OperationalAnalyticsReadModelTest extends TestCase
         Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 1000]);
         Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 1000]);
 
-        \Illuminate\Support\Facades\DB::enableQueryLog();
+        DB::enableQueryLog();
         app(OperationalAnalyticsReadModel::class)->reconciliation();
-        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        $queries = DB::getQueryLog();
 
         $movementQueries = array_filter($queries, fn (array $query): bool => str_contains($query['query'], 'inventory_movements'));
 
@@ -299,7 +302,6 @@ class OperationalAnalyticsReadModelTest extends TestCase
 
         CarbonImmutable::setTestNow();
     }
-
 
     public function test_daily_received_mass_chart_data(): void
     {
@@ -321,7 +323,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
             'occurred_at' => now()->subMinute(),
             'gross_mass' => 1000,
         ]);
-        app(\App\Actions\ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
+        app(ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
 
         $readModel = app(OperationalAnalyticsReadModel::class);
         [$start, $end] = $readModel->resolvePeriod('today');
@@ -348,7 +350,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
             'truck_registration' => 'KAA 123A',
             'driver_name' => 'Driver',
         ]);
-        app(\App\Actions\ProcessTruckDispatch::class)->execute($dispatch->fresh(['tank', 'commodity']));
+        app(ProcessTruckDispatch::class)->execute($dispatch->fresh(['tank', 'commodity']));
 
         $readModel = app(OperationalAnalyticsReadModel::class);
         [$start, $end] = $readModel->resolvePeriod('today');
@@ -374,6 +376,160 @@ class OperationalAnalyticsReadModelTest extends TestCase
 
         $this->assertSame('100.000', $row['current_inventory']);
         $this->assertSame(0, $row['received_operations']);
+    }
+
+    public function test_daily_trends_include_zero_activity_days_and_exclude_incomplete_operations(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 30000, 'current_quantity' => 0]);
+
+        Discharge::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Completed,
+            'gross_mass' => 1000,
+            'transit_loss_mass' => 5,
+            'net_received_mass' => 995,
+            'completed_at' => CarbonImmutable::parse('2026-11-03 09:00:00', OperationalTime::timezone()),
+        ]);
+
+        Discharge::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Draft,
+            'gross_mass' => 4000,
+            'transit_loss_mass' => 20,
+            'net_received_mass' => 3980,
+            'completed_at' => CarbonImmutable::parse('2026-11-04 09:00:00', OperationalTime::timezone()),
+        ]);
+
+        TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => TruckDispatchStatus::Dispatched,
+            'quantity' => 40,
+            'dispatched_at' => CarbonImmutable::parse('2026-11-04 09:00:00', OperationalTime::timezone()),
+        ]);
+
+        TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => TruckDispatchStatus::Planned,
+            'quantity' => 900,
+            'dispatched_at' => CarbonImmutable::parse('2026-11-04 10:00:00', OperationalTime::timezone()),
+        ]);
+
+        $readModel = app(OperationalAnalyticsReadModel::class);
+        [$start, $end] = $readModel->resolvePeriod('last_7_days');
+
+        $received = $readModel->dailyReceivedMass($start, $end);
+        $dispatched = $readModel->dailyDispatchedMass($start, $end);
+
+        $this->assertCount(7, $received['labels']);
+        $this->assertCount(7, $dispatched['labels']);
+        $this->assertSame([0.0, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0], $received['gross']);
+        $this->assertSame([0.0, 0.0, 0.0, 0.0, 0.0, 995.0, 0.0], $received['net']);
+        $this->assertSame('5.000', $received['transit_loss_total']);
+        $this->assertSame([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 40.0], $dispatched['quantity']);
+    }
+
+    public function test_daily_trend_totals_reconcile_with_the_period_summary(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 30000, 'current_quantity' => 0]);
+
+        Discharge::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Completed,
+            'gross_mass' => 1000,
+            'transit_loss_mass' => 5,
+            'net_received_mass' => 995,
+            'completed_at' => CarbonImmutable::parse('2026-11-04 09:00:00', OperationalTime::timezone()),
+        ]);
+
+        TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => TruckDispatchStatus::Dispatched,
+            'quantity' => 40,
+            'dispatched_at' => CarbonImmutable::parse('2026-11-04 09:00:00', OperationalTime::timezone()),
+        ]);
+
+        $readModel = app(OperationalAnalyticsReadModel::class);
+        [$start, $end] = $readModel->resolvePeriod('today');
+
+        $received = $readModel->dailyReceivedMass($start, $end);
+        $dispatched = $readModel->dailyDispatchedMass($start, $end);
+        $summary = $readModel->periodSummary($start, $end);
+
+        $this->assertSame((float) $summary['received']['gross_mass'], (float) array_sum($received['gross']));
+        $this->assertSame((float) $summary['received']['net_received_mass'], (float) array_sum($received['net']));
+        $this->assertSame($summary['received']['transit_loss_mass'], $received['transit_loss_total']);
+        $this->assertSame((float) $summary['dispatched']['quantity'], (float) array_sum($dispatched['quantity']));
+    }
+
+    public function test_custom_period_boundaries_are_built_from_nairobi_dates(): void
+    {
+        $this->freezeAt('2026-11-15 10:00:00');
+
+        [$start, $end, $label] = app(OperationalAnalyticsReadModel::class)
+            ->resolvePeriod('custom', '2026-11-03', '2026-11-05');
+
+        $this->assertSame('2026-11-03 00:00:00', $start->setTimezone(OperationalTime::timezone())->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-11-05 23:59:59', $end->setTimezone(OperationalTime::timezone())->format('Y-m-d H:i:s'));
+        $this->assertSame('3 Nov 2026 to 5 Nov 2026', $label);
+    }
+
+    public function test_active_tank_utilization_includes_active_tanks_only(): void
+    {
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+
+        Tank::factory()->create([
+            'code' => 'T-101',
+            'commodity_id' => $commodity->id,
+            'capacity' => 30000,
+            'current_quantity' => 7500,
+        ]);
+
+        Tank::factory()->create([
+            'code' => 'T-999',
+            'commodity_id' => $commodity->id,
+            'capacity' => 10000,
+            'current_quantity' => 5000,
+            'status' => TankStatus::Inactive,
+        ]);
+
+        $rows = app(OperationalAnalyticsReadModel::class)->activeTankUtilization();
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('T-101', $rows->first()['code']);
+        $this->assertSame('30000.000', $rows->first()['capacity']);
+        $this->assertSame('7500.000', $rows->first()['current_quantity']);
+        $this->assertSame('22500.000', $rows->first()['available_capacity']);
+        $this->assertSame('25.00', $rows->first()['utilization']);
+    }
+
+    public function test_active_tank_utilization_handles_zero_capacity_safely(): void
+    {
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+
+        Tank::factory()->create([
+            'code' => 'T-ZERO',
+            'commodity_id' => $commodity->id,
+            'capacity' => 0,
+            'current_quantity' => 0,
+        ]);
+
+        $row = app(OperationalAnalyticsReadModel::class)->activeTankUtilization()->firstWhere('code', 'T-ZERO');
+
+        $this->assertSame('0.000', $row['capacity']);
+        $this->assertSame('0.000', $row['available_capacity']);
+        $this->assertSame('0.00', $row['utilization']);
     }
 
     private function freezeAt(string $datetime): void

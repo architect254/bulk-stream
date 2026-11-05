@@ -228,6 +228,46 @@ final class OperationalAnalyticsReadModel
     }
 
     /**
+     * Active tanks only, reduced to the values required by the utilization chart.
+     *
+     * This is deliberately narrower than tankInventoryAnalysis(): the chart does
+     * not need movement counts, so no per-tank queries are issued.
+     *
+     * @return Collection<int, array{
+     *     code: string,
+     *     commodity: string,
+     *     capacity: string,
+     *     current_quantity: string,
+     *     available_capacity: string,
+     *     utilization: string
+     * }>
+     */
+    public function activeTankUtilization(): Collection
+    {
+        return Tank::query()
+            ->active()
+            ->with('commodity')
+            ->orderBy('code')
+            ->get(['id', 'code', 'commodity_id', 'capacity', 'current_quantity'])
+            ->map(function (Tank $tank): array {
+                $current = (string) $tank->current_quantity;
+                $capacity = (string) $tank->capacity;
+                $availableMinor = DecimalMath::toMinorUnits($capacity) - DecimalMath::toMinorUnits($current);
+
+                return [
+                    'code' => $tank->code,
+                    'commodity' => $tank->commodity?->code?->value ?? '—',
+                    'capacity' => $this->decimal($capacity),
+                    'current_quantity' => $this->decimal($current),
+                    'available_capacity' => DecimalMath::fromMinorUnits(max(0, $availableMinor)),
+                    'utilization' => DecimalMath::toMinorUnits($capacity) > 0
+                        ? number_format(DecimalMath::toMinorUnits($current) * 100 / DecimalMath::toMinorUnits($capacity), 2)
+                        : '0.00',
+                ];
+            });
+    }
+
+    /**
      * @return Collection<int, array<string, mixed>>
      */
     public function reconciliation(): Collection

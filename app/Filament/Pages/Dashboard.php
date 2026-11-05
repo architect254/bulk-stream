@@ -34,7 +34,10 @@ class Dashboard extends BaseDashboard
 
     public function getColumns(): int|array
     {
-        return 1;
+        return [
+            'default' => 1,
+            'lg' => 2,
+        ];
     }
 
     public function getWidgets(): array

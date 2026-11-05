@@ -3,11 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Application\Dashboard\OperationalAnalyticsReadModel;
+use App\Filament\Support\ChartPalette;
+use App\Filament\Widgets\Concerns\UsesAnalyticsPeriod;
 use Filament\Support\RawJs;
-use Filament\Widgets\BarChartWidget;
+use Filament\Widgets\ChartWidget;
 
-class ReceivedMassChart extends BarChartWidget
+class ReceivedMassChart extends ChartWidget
 {
+    use UsesAnalyticsPeriod;
+
     protected static ?bool $isLazyLoaded = false;
 
     protected static ?int $sort = 10;
@@ -16,20 +20,20 @@ class ReceivedMassChart extends BarChartWidget
 
     protected ?string $heading = 'Received mass by day';
 
-    protected ?string $description = 'Completed discharge gross and net mass for the selected reporting period.';
+    protected ?string $description = 'Completed discharge gross and net mass for the selected reporting period. Transit loss is reported separately.';
 
     protected ?string $maxHeight = '300px';
 
+    protected function getType(): string
+    {
+        return 'bar';
+    }
+
     protected function getData(): array
     {
-        $readModel = app(OperationalAnalyticsReadModel::class);
-        [$startUtc, $endUtc] = $readModel->resolvePeriod(
-            (string) request()->query('period', 'today'),
-            request()->query('start_date'),
-            request()->query('end_date'),
-        );
+        [$startUtc, $endUtc] = $this->analyticsPeriod();
 
-        $data = $readModel->dailyReceivedMass($startUtc, $endUtc);
+        $data = app(OperationalAnalyticsReadModel::class)->dailyReceivedMass($startUtc, $endUtc);
 
         return [
             'labels' => $data['labels'],
@@ -37,12 +41,14 @@ class ReceivedMassChart extends BarChartWidget
                 [
                     'label' => 'Gross received (MT)',
                     'data' => $data['gross'],
-                    'backgroundColor' => '#0f766e',
+                    'backgroundColor' => ChartPalette::INBOUND,
+                    'maxBarThickness' => 26,
                 ],
                 [
                     'label' => 'Net received (MT)',
                     'data' => $data['net'],
-                    'backgroundColor' => '#16a34a',
+                    'backgroundColor' => ChartPalette::INBOUND_NET,
+                    'maxBarThickness' => 26,
                 ],
             ],
         ];
@@ -51,22 +57,53 @@ class ReceivedMassChart extends BarChartWidget
     protected function getOptions(): array|RawJs|null
     {
         return RawJs::make(<<<'JS'
-        {
-            scales: {
-                y: {
-                    beginAtZero: true,
+        (() => {
+            const mt = (value) => new Intl.NumberFormat('en-KE', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3,
+            }).format(Number(value)) + ' MT';
+
+            return {
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            return context.dataset.label + ': ' + Number(context.parsed.y).toFixed(3) + ' MT';
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 0,
+                            maxTicksLimit: 12,
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'MT',
                         },
                     },
                 },
-            },
-        }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 9,
+                            boxHeight: 9,
+                        },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.dataset.label + ': ' + mt(context.parsed.y),
+                        },
+                    },
+                },
+            };
+        })()
         JS);
     }
 
@@ -83,8 +120,12 @@ class ReceivedMassChart extends BarChartWidget
     public function isEmpty(): bool
     {
         $data = $this->getCachedData();
-        $values = array_merge($data['datasets'][0]['data'] ?? [], $data['datasets'][1]['data'] ?? []);
 
-        return array_sum(array_map('floatval', $values)) === 0.0;
+        $values = array_merge(
+            $data['datasets'][0]['data'] ?? [],
+            $data['datasets'][1]['data'] ?? [],
+        );
+
+        return (float) array_sum(array_map('floatval', $values)) === 0.0;
     }
 }

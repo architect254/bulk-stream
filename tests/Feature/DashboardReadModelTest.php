@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Actions\ProcessInboundDischarge;
 use App\Actions\ProcessTruckDispatch;
 use App\Application\Dashboard\TerminalDashboardReadModel;
-use App\Support\OperationalTime;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\CommodityCode;
 use App\Enums\DischargeStatus;
@@ -20,6 +19,7 @@ use App\Models\InventoryMovement;
 use App\Models\Tank;
 use App\Models\TruckDispatch;
 use App\Models\Vessel;
+use App\Support\OperationalTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -481,15 +481,101 @@ class DashboardReadModelTest extends TestCase
             'occurred_at' => now()->subMinute(),
             'gross_mass' => 1000,
         ]);
-        app(\App\Actions\ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
+        app(ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
 
-        $flow = app(\App\Application\Dashboard\TerminalDashboardReadModel::class)->dailyCargoFlow(7);
+        $flow = app(TerminalDashboardReadModel::class)->dailyCargoFlow(7);
 
         $this->assertCount(7, $flow['labels']);
         $this->assertCount(7, $flow['inbound']);
         $this->assertCount(7, $flow['outbound']);
         $this->assertSame(995.0, array_sum($flow['inbound']));
         $this->assertSame(0.0, array_sum($flow['outbound']));
+    }
+
+    public function test_daily_cargo_flow_groups_completed_operations_by_completion_and_dispatch_dates(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create([
+            'commodity_id' => $commodity->id,
+            'capacity' => 30000,
+            'current_quantity' => 0,
+        ]);
+
+        $this->completedDischarge('995.000', CarbonImmutable::parse('2026-11-04 09:00:00', OperationalTime::timezone()), $commodity, $tank);
+        $this->completedDischarge('497.500', CarbonImmutable::parse('2026-11-02 12:00:00', OperationalTime::timezone()), $commodity, $tank);
+
+        TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => TruckDispatchStatus::Dispatched,
+            'quantity' => 100,
+            'dispatched_at' => CarbonImmutable::parse('2026-11-03 12:00:00', OperationalTime::timezone()),
+        ]);
+
+        $flow = app(TerminalDashboardReadModel::class)->dailyCargoFlow(7);
+
+        $this->assertSame(
+            ['29 Oct', '30 Oct', '31 Oct', '1 Nov', '2 Nov', '3 Nov', '4 Nov'],
+            $flow['labels'],
+        );
+        $this->assertSame([0.0, 0.0, 0.0, 0.0, 497.5, 0.0, 995.0], $flow['inbound']);
+        $this->assertSame([0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0], $flow['outbound']);
+    }
+
+    public function test_daily_cargo_flow_excludes_incomplete_and_planned_operations(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create([
+            'commodity_id' => $commodity->id,
+            'capacity' => 30000,
+            'current_quantity' => 0,
+        ]);
+
+        Discharge::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Processing,
+            'gross_mass' => 4000,
+            'transit_loss_mass' => 20,
+            'net_received_mass' => 3980,
+            'completed_at' => CarbonImmutable::parse('2026-11-04 09:00:00', OperationalTime::timezone()),
+        ]);
+
+        Discharge::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Failed,
+            'gross_mass' => 2000,
+            'transit_loss_mass' => 10,
+            'net_received_mass' => 1990,
+            'completed_at' => CarbonImmutable::parse('2026-11-04 08:00:00', OperationalTime::timezone()),
+        ]);
+
+        TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => TruckDispatchStatus::Planned,
+            'quantity' => 500,
+            'dispatched_at' => CarbonImmutable::parse('2026-11-04 07:00:00', OperationalTime::timezone()),
+        ]);
+
+        TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => TruckDispatchStatus::Cancelled,
+            'quantity' => 250,
+            'dispatched_at' => CarbonImmutable::parse('2026-11-04 06:00:00', OperationalTime::timezone()),
+        ]);
+
+        $flow = app(TerminalDashboardReadModel::class)->dailyCargoFlow(7);
+
+        $this->assertSame(0.0, (float) array_sum($flow['inbound']));
+        $this->assertSame(0.0, (float) array_sum($flow['outbound']));
+        $this->assertCount(7, $flow['labels']);
     }
 
     private function freezeAt(string $datetime): void

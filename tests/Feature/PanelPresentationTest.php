@@ -8,6 +8,8 @@ use App\Filament\Resources\InventoryMovements\InventoryMovementResource;
 use App\Filament\Resources\Tanks\TankResource;
 use App\Filament\Resources\TruckDispatches\TruckDispatchResource;
 use App\Filament\Resources\Vessels\VesselResource;
+use App\Filament\Widgets\CargoFlowChart;
+use App\Filament\Widgets\InventoryByCommodityChart;
 use App\Filament\Widgets\OperationalExceptions;
 use App\Filament\Widgets\OperationalFlow;
 use App\Filament\Widgets\RecentMovements;
@@ -64,13 +66,29 @@ class PanelPresentationTest extends TestCase
         $this->assertSame([
             TerminalOverview::class,
             OperationalFlow::class,
-            \App\Filament\Widgets\CargoFlowChart::class,
-            \App\Filament\Widgets\InventoryByCommodityChart::class,
+            CargoFlowChart::class,
+            InventoryByCommodityChart::class,
             TankBoard::class,
             OperationalExceptions::class,
             RecentMovements::class,
         ], $dashboard->getWidgets());
 
-        $this->assertSame(1, $dashboard->getColumns());
+        $this->assertSame([
+            'default' => 1,
+            'lg' => 2,
+        ], $dashboard->getColumns());
+    }
+
+    public function test_dashboard_kpi_cards_stay_readable_on_tablet_widths(): void
+    {
+        $widget = app(TerminalOverview::class);
+        $method = new \ReflectionMethod($widget, 'getColumns');
+        $method->setAccessible(true);
+
+        $this->assertSame([
+            'default' => 1,
+            'sm' => 2,
+            'xl' => 4,
+        ], $method->invoke($widget));
     }
 }

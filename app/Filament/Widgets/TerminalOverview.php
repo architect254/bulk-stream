@@ -14,6 +14,24 @@ class TerminalOverview extends StatsOverviewWidget
 
     protected static ?int $sort = 10;
 
+    /**
+     * Four cards are the desktop target, but the KPI values and their
+     * descriptions are long enough that four cards do not fit on a tablet.
+     * Filament's default (four columns as soon as the container reaches 36rem)
+     * lets the last card overflow the viewport between roughly 768 and 1279
+     * CSS pixels, so stay at two columns until the panel is genuinely wide.
+     *
+     * @return array<string, int>
+     */
+    protected function getColumns(): int|array|null
+    {
+        return [
+            'default' => 1,
+            'sm' => 2,
+            'xl' => 4,
+        ];
+    }
+
     protected function getStats(): array
     {
         $dashboard = app(TerminalDashboardReadModel::class);
