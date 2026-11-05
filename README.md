@@ -84,6 +84,21 @@ draft, planned and failed records are excluded from completed mass totals.
 Dashboard queries live in `App\Application\Dashboard\TerminalDashboardReadModel`
 and never mutate operational records.
 
+## Operations analytics
+
+The read-only operations analytics page summarizes completed operations over a
+selected reporting period, including:
+
+- gross, transit loss, and net received mass
+- dispatched mass
+- commodity breakdowns
+- tank inventory and utilization
+- discharge and transit-loss analysis
+- inventory reconciliation against the movement ledger
+
+Reporting periods use `Africa/Nairobi` day boundaries. Database timestamps remain
+stored in UTC.
+
 ## Setup
 
 ### Prerequisites
@@ -178,7 +193,7 @@ Final verified results:
 
 ```text
 php artisan test
-# 119 tests, 442 assertions, passed
+# 144 tests, 546 assertions, passed
 
 npm run build
 # success
@@ -187,7 +202,7 @@ php artisan migrate:fresh --seed
 # success
 
 php artisan route:list
-# 36 routes
+# 37 routes
 ```
 
 ## Known Limitations
