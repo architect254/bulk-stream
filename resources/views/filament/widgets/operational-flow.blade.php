@@ -1,3 +1,4 @@
+<x-filament-widgets::widget>
 <x-filament::section
     heading="Operational flow"
     description="Vessels → Inbound discharges → Storage tanks → Truck dispatches"
@@ -21,3 +22,4 @@
         @endforeach
     </div>
 </x-filament::section>
+</x-filament-widgets::widget>

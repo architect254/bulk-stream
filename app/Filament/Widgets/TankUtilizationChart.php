@@ -3,10 +3,11 @@
 namespace App\Filament\Widgets;
 
 use App\Application\Dashboard\OperationalAnalyticsReadModel;
+use App\Filament\Support\ChartPalette;
 use Filament\Support\RawJs;
-use Filament\Widgets\BarChartWidget;
+use Filament\Widgets\ChartWidget;
 
-class TankUtilizationChart extends BarChartWidget
+class TankUtilizationChart extends ChartWidget
 {
     protected static ?bool $isLazyLoaded = false;
 
@@ -16,76 +17,108 @@ class TankUtilizationChart extends BarChartWidget
 
     protected ?string $heading = 'Tank capacity utilization';
 
-    protected ?string $description = 'Current inventory and remaining capacity for active tanks.';
-
-    protected ?string $maxHeight = '300px';
-
-    protected function getData(): array
-    {
-        $tanks = app(OperationalAnalyticsReadModel::class)
-            ->tankInventoryAnalysis()
-            ->where('status', 'Active')
-            ->values();
-
-        return [
-            'labels' => $tanks->pluck('code')->all(),
-            'datasets' => [
-                [
-                    'label' => 'Current (MT)',
-                    'data' => $tanks->pluck('current_quantity')->map(fn ($value) => (float) $value)->all(),
-                    'backgroundColor' => '#0f766e',
-                ],
-                [
-                    'label' => 'Available (MT)',
-                    'data' => $tanks->pluck('available_capacity')->map(fn ($value) => (float) $value)->all(),
-                    'backgroundColor' => '#cbd5e1',
-                ],
-            ],
-        ];
-    }
+    protected ?string $description = 'Current inventory and remaining capacity for active tanks. Each bar is scaled to that tank\'s configured capacity.';
 
     protected function getType(): string
     {
         return 'bar';
     }
 
+    protected function getData(): array
+    {
+        $tanks = app(OperationalAnalyticsReadModel::class)->activeTankUtilization();
+
+        return [
+            'labels' => $tanks->pluck('code')->all(),
+            'datasets' => [
+                [
+                    'label' => 'Current inventory (MT)',
+                    'data' => $tanks->pluck('current_quantity')->map(static fn (string $value): float => (float) $value)->all(),
+                    'capacity' => $tanks->pluck('capacity')->map(static fn (string $value): float => (float) $value)->all(),
+                    'backgroundColor' => ChartPalette::INBOUND,
+                    'maxBarThickness' => 28,
+                ],
+                [
+                    'label' => 'Available capacity (MT)',
+                    'data' => $tanks->pluck('available_capacity')->map(static fn (string $value): float => (float) $value)->all(),
+                    'backgroundColor' => ChartPalette::AVAILABLE,
+                    'maxBarThickness' => 28,
+                ],
+            ],
+        ];
+    }
+
+    protected function getMaxHeight(): ?string
+    {
+        $tanks = count($this->getCachedData()['labels'] ?? []);
+
+        return min(520, max(280, 90 + ($tanks * 46))).'px';
+    }
+
     protected function getOptions(): array|RawJs|null
     {
         return RawJs::make(<<<'JS'
-        {
-            indexAxis: 'y',
-            scales: {
-                x: {
-                    stacked: true,
-                    beginAtZero: true,
+        (() => {
+            const mt = (value) => new Intl.NumberFormat('en-KE', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3,
+            }).format(Number(value)) + ' MT';
+
+            return {
+                indexAxis: 'y',
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
-                y: {
-                    stacked: true,
-                },
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            return context.dataset.label + ': ' + Number(context.parsed.x).toFixed(3) + ' MT';
+                scales: {
+                    x: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'MT',
                         },
-                        afterBody: function (items) {
-                            if (! items.length) {
-                                return '';
-                            }
-
-                            var index = items[0].dataIndex;
-                            var current = Number(items[0].chart.data.datasets[0].data[index] || 0);
-                            var available = Number(items[0].chart.data.datasets[1].data[index] || 0);
-                            var total = current + available;
-                            var utilization = total > 0 ? (current / total * 100).toFixed(2) : '0.00';
-
-                            return 'Utilization: ' + utilization + '%';
+                    },
+                    y: {
+                        stacked: true,
+                        grid: {
+                            display: false,
                         },
                     },
                 },
-            },
-        }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 9,
+                            boxHeight: 9,
+                        },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.dataset.label + ': ' + mt(context.parsed.x),
+                            afterBody: (items) => {
+                                if (! items.length) {
+                                    return '';
+                                }
+
+                                const index = items[0].dataIndex;
+                                const dataset = items[0].chart.data.datasets[0];
+                                const current = Number(dataset.data[index] || 0);
+                                const available = Number(items[0].chart.data.datasets[1].data[index] || 0);
+                                const capacity = Number(dataset.capacity?.[index] ?? (current + available));
+                                const utilization = capacity > 0
+                                    ? (current / capacity * 100).toFixed(2) + '%'
+                                    : 'not applicable (no capacity configured)';
+
+                                return ['Capacity: ' + mt(capacity), 'Utilization: ' + utilization];
+                            },
+                        },
+                    },
+                },
+            };
+        })()
         JS);
     }
 
@@ -101,9 +134,6 @@ class TankUtilizationChart extends BarChartWidget
 
     public function isEmpty(): bool
     {
-        $data = $this->getCachedData();
-        $values = array_merge($data['datasets'][0]['data'] ?? [], $data['datasets'][1]['data'] ?? []);
-
-        return empty($data['labels'] ?? []) || array_sum(array_map('floatval', $values)) === 0.0;
+        return empty($this->getCachedData()['labels'] ?? []);
     }
 }

@@ -33,7 +33,7 @@
     <x-filament::section heading="Period summary" class="mb-6">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-md border border-gray-200 p-4 dark:border-white/10">
-                <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Received today net (MT)</div>
+                <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Received net (MT)</div>
                 <div class="mt-1 text-2xl font-semibold tabular-nums">{{ \App\Filament\Support\Quantity::mass($summary['received']['net_received_mass']) }}</div>
                 <div class="mt-1 text-xs text-gray-500">{{ $summary['received']['operations'] }} completed discharge(s)</div>
             </div>
@@ -55,23 +55,46 @@
         </div>
     </x-filament::section>
 
-    <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <x-filament::section heading="Received mass by day">
-            @livewire(\App\Filament\Widgets\ReceivedMassChart::class)
-        </x-filament::section>
+    <div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="flex flex-col gap-4">
+            @livewire(\App\Filament\Widgets\ReceivedMassChart::class, [
+                'period' => $period,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+            ])
 
-        <x-filament::section heading="Dispatch volume by day">
-            @livewire(\App\Filament\Widgets\DispatchVolumeChart::class)
-        </x-filament::section>
+            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Transit loss for this period</div>
+                <div class="mt-1 flex items-baseline gap-2">
+                    <span class="text-xl font-semibold tabular-nums text-gray-950 dark:text-white">{{ \App\Filament\Support\Quantity::mass($summary['received']['transit_loss_mass']) }}</span>
+                    <span class="text-xs font-medium text-gray-500">MT</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    0.5% of {{ \App\Filament\Support\Quantity::mass($summary['received']['gross_mass']) }} MT gross received. Reported as a figure rather than a third bar series so the gross and net bars remain readable.
+                </p>
+            </div>
+        </div>
+
+        <div>
+            @livewire(\App\Filament\Widgets\DispatchVolumeChart::class, [
+                'period' => $period,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+            ])
+        </div>
     </div>
 
-    <x-filament::section heading="Tank capacity utilization" class="mb-6">
+    <div class="mb-6">
         @livewire(\App\Filament\Widgets\TankUtilizationChart::class)
-    </x-filament::section>
+    </div>
 
-    <x-filament::section heading="Commodity throughput and current stock" class="mb-6">
-        @livewire(\App\Filament\Widgets\CommodityThroughputChart::class)
-    </x-filament::section>
+    <div class="mb-6">
+        @livewire(\App\Filament\Widgets\CommodityThroughputChart::class, [
+            'period' => $period,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ])
+    </div>
 
     <x-filament::section heading="Commodity breakdown" class="mb-6">
         <div class="overflow-x-auto">
@@ -214,5 +237,3 @@
         </div>
     </x-filament::section>
 </x-filament::page>
-EOF
-echo created

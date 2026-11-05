@@ -3,11 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Application\Dashboard\OperationalAnalyticsReadModel;
+use App\Filament\Support\ChartPalette;
+use App\Filament\Widgets\Concerns\UsesAnalyticsPeriod;
 use Filament\Support\RawJs;
-use Filament\Widgets\LineChartWidget;
+use Filament\Widgets\ChartWidget;
 
-class DispatchVolumeChart extends LineChartWidget
+class DispatchVolumeChart extends ChartWidget
 {
+    use UsesAnalyticsPeriod;
+
     protected static ?bool $isLazyLoaded = false;
 
     protected static ?int $sort = 20;
@@ -20,16 +24,16 @@ class DispatchVolumeChart extends LineChartWidget
 
     protected ?string $maxHeight = '300px';
 
+    protected function getType(): string
+    {
+        return 'line';
+    }
+
     protected function getData(): array
     {
-        $readModel = app(OperationalAnalyticsReadModel::class);
-        [$startUtc, $endUtc] = $readModel->resolvePeriod(
-            (string) request()->query('period', 'today'),
-            request()->query('start_date'),
-            request()->query('end_date'),
-        );
+        [$startUtc, $endUtc] = $this->analyticsPeriod();
 
-        $data = $readModel->dailyDispatchedMass($startUtc, $endUtc);
+        $data = app(OperationalAnalyticsReadModel::class)->dailyDispatchedMass($startUtc, $endUtc);
 
         return [
             'labels' => $data['labels'],
@@ -37,8 +41,11 @@ class DispatchVolumeChart extends LineChartWidget
                 [
                     'label' => 'Dispatched (MT)',
                     'data' => $data['quantity'],
-                    'borderColor' => '#475569',
-                    'backgroundColor' => '#475569',
+                    'borderColor' => ChartPalette::OUTBOUND,
+                    'backgroundColor' => ChartPalette::OUTBOUND,
+                    'borderWidth' => 2,
+                    'pointRadius' => 3,
+                    'pointHoverRadius' => 4,
                     'fill' => false,
                 ],
             ],
@@ -48,22 +55,53 @@ class DispatchVolumeChart extends LineChartWidget
     protected function getOptions(): array|RawJs|null
     {
         return RawJs::make(<<<'JS'
-        {
-            scales: {
-                y: {
-                    beginAtZero: true,
+        (() => {
+            const mt = (value) => new Intl.NumberFormat('en-KE', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3,
+            }).format(Number(value)) + ' MT';
+
+            return {
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            return context.dataset.label + ': ' + Number(context.parsed.y).toFixed(3) + ' MT';
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 0,
+                            maxTicksLimit: 12,
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'MT',
                         },
                     },
                 },
-            },
-        }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 9,
+                            boxHeight: 9,
+                        },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.dataset.label + ': ' + mt(context.parsed.y),
+                        },
+                    },
+                },
+            };
+        })()
         JS);
     }
 
@@ -81,6 +119,6 @@ class DispatchVolumeChart extends LineChartWidget
     {
         $data = $this->getCachedData()['datasets'][0]['data'] ?? [];
 
-        return array_sum(array_map('floatval', $data)) === 0.0;
+        return (float) array_sum(array_map('floatval', $data)) === 0.0;
     }
 }
