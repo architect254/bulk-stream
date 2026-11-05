@@ -2,6 +2,7 @@
 
 namespace App\Application\Dashboard;
 
+use App\Application\Inventory\LedgerReconstruction;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\DischargeStatus;
 use App\Enums\TankStatus;
@@ -18,6 +19,10 @@ use Illuminate\Support\Collection;
 
 final class OperationalAnalyticsReadModel
 {
+    public function __construct(
+        private readonly LedgerReconstruction $ledger = new LedgerReconstruction,
+    ) {}
+
     /**
      * @return array{0: CarbonImmutable, 1: CarbonImmutable, 2: string}
      */
@@ -199,39 +204,7 @@ final class OperationalAnalyticsReadModel
     }
 
     /**
-     * @return Collection<int, array<string, mixed>>
-     */
-    public function tankInventoryAnalysis(): Collection
-    {
-        return Tank::query()
-            ->with('commodity')
-            ->orderBy('code')
-            ->get()
-            ->map(function (Tank $tank): array {
-                $current = (string) $tank->current_quantity;
-                $capacity = (string) $tank->capacity;
-                $availableMinor = DecimalMath::toMinorUnits($capacity) - DecimalMath::toMinorUnits($current);
-
-                return [
-                    'code' => $tank->code,
-                    'commodity' => $tank->commodity?->code?->value ?? '—',
-                    'status' => $tank->status->getLabel(),
-                    'capacity' => $this->decimal($capacity),
-                    'current_quantity' => $this->decimal($current),
-                    'available_capacity' => DecimalMath::fromMinorUnits(max(0, $availableMinor)),
-                    'utilization' => DecimalMath::toMinorUnits($capacity) > 0
-                        ? number_format(DecimalMath::toMinorUnits($current) * 100 / DecimalMath::toMinorUnits($capacity), 2)
-                        : '0.00',
-                    'movement_count' => $tank->inventoryMovements()->count(),
-                ];
-            });
-    }
-
-    /**
      * Active tanks only, reduced to the values required by the utilization chart.
-     *
-     * This is deliberately narrower than tankInventoryAnalysis(): the chart does
-     * not need movement counts, so no per-tank queries are issued.
      *
      * @return Collection<int, array{
      *     code: string,
@@ -278,68 +251,25 @@ final class OperationalAnalyticsReadModel
             ->get();
 
         return $tanks->map(function (Tank $tank): array {
-            $movements = $tank->inventoryMovements
-                ->sortBy([['occurred_at', 'asc'], ['id', 'asc']])
-                ->values();
-
-            $reconstructed = '0.000';
-            $continuous = true;
-            $expectedBefore = '0.000';
-
-            if ($movements->isEmpty()) {
-                $continuous = true;
-            } else {
-                foreach ($movements as $movement) {
-                    try {
-                        $before = DecimalMath::toMinorUnits((string) $movement->balance_before);
-                        $after = DecimalMath::toMinorUnits((string) $movement->balance_after);
-                        $expectedBeforeMinor = DecimalMath::toMinorUnits($expectedBefore);
-                    } catch (\Throwable) {
-                        $continuous = false;
-                        break;
-                    }
-
-                    if ($before !== $expectedBeforeMinor) {
-                        $continuous = false;
-                        break;
-                    }
-
-                    if ($movement->movement_type->value === 'inbound') {
-                        $reconstructed = DecimalMath::add($reconstructed, (string) $movement->quantity);
-                    } else {
-                        $reconstructed = DecimalMath::subtract($reconstructed, (string) $movement->quantity);
-                    }
-
-                    if ($after !== DecimalMath::toMinorUnits($reconstructed)) {
-                        $continuous = false;
-                        break;
-                    }
-
-                    $expectedBefore = $reconstructed;
-                }
-            }
+            $evaluation = $this->ledger->evaluate($tank->inventoryMovements, (string) $tank->current_quantity);
 
             $stored = (string) $tank->current_quantity;
-            $difference = DecimalMath::subtract($stored, $reconstructed);
 
-            if ($movements->isEmpty()) {
-                $status = DecimalMath::toMinorUnits($stored) === 0 ? 'Reconciled' : 'Unverifiable';
-            } elseif (! $continuous) {
-                $status = 'Unverifiable';
-            } elseif (DecimalMath::toMinorUnits($difference) === 0) {
-                $status = 'Reconciled';
-            } else {
-                $status = 'Discrepancy';
-            }
+            $status = match ($evaluation['status']) {
+                'empty' => DecimalMath::toMinorUnits($stored) === 0 ? 'Reconciled' : 'Unverifiable',
+                'verified' => 'Reconciled',
+                'discrepancy' => 'Discrepancy',
+                default => 'Unverifiable',
+            };
 
             return [
                 'code' => $tank->code,
                 'commodity' => $tank->commodity?->code?->value ?? '—',
                 'stored_balance' => $this->decimal($stored),
-                'reconstructed_balance' => $this->decimal($reconstructed),
-                'difference' => $this->decimal($difference),
-                'movement_count' => $movements->count(),
-                'balance_chain_valid' => $continuous,
+                'reconstructed_balance' => $this->decimal($evaluation['reconstructed_balance']),
+                'difference' => $this->decimal($evaluation['difference']),
+                'movement_count' => $evaluation['movements']->count(),
+                'balance_chain_valid' => $evaluation['chain_valid'],
                 'status' => $status,
             ];
         });

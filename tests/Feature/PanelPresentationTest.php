@@ -9,11 +9,19 @@ use App\Filament\Resources\Tanks\TankResource;
 use App\Filament\Resources\TruckDispatches\TruckDispatchResource;
 use App\Filament\Resources\Vessels\VesselResource;
 use App\Filament\Widgets\CargoFlowChart;
+use App\Filament\Widgets\CommodityBreakdownTable;
+use App\Filament\Widgets\CommodityThroughputChart;
+use App\Filament\Widgets\DischargeAnalysisTable;
+use App\Filament\Widgets\DispatchVolumeChart;
 use App\Filament\Widgets\InventoryByCommodityChart;
 use App\Filament\Widgets\OperationalExceptions;
 use App\Filament\Widgets\OperationalFlow;
+use App\Filament\Widgets\PeriodSummary;
+use App\Filament\Widgets\ReceivedMassChart;
 use App\Filament\Widgets\RecentMovements;
+use App\Filament\Widgets\ReconciliationTable;
 use App\Filament\Widgets\TankBoard;
+use App\Filament\Widgets\TankUtilizationChart;
 use App\Filament\Widgets\TerminalOverview;
 use Filament\Facades\Filament;
 use Filament\Navigation\NavigationGroup;
@@ -68,9 +76,17 @@ class PanelPresentationTest extends TestCase
             OperationalFlow::class,
             CargoFlowChart::class,
             InventoryByCommodityChart::class,
+            PeriodSummary::class,
+            ReceivedMassChart::class,
+            DispatchVolumeChart::class,
+            TankUtilizationChart::class,
+            CommodityThroughputChart::class,
             TankBoard::class,
             OperationalExceptions::class,
             RecentMovements::class,
+            CommodityBreakdownTable::class,
+            DischargeAnalysisTable::class,
+            ReconciliationTable::class,
         ], $dashboard->getWidgets());
 
         $this->assertSame([

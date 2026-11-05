@@ -31,4 +31,28 @@ trait ReadsChartData
 
         return (string) $method->invoke($widget);
     }
+
+    /**
+     * @return array{labels: list<string>, datasets: list<array<string, mixed>>}
+     */
+    protected function chartPayloadFromHtml(string $html, string $datasetLabel): array
+    {
+        preg_match_all('/cachedData: JSON\\.parse\(\'(.+?)\'\),/s', $html, $matches);
+
+        foreach ($matches[1] as $encoded) {
+            $decoded = json_decode(str_replace('\\u0022', '"', $encoded), true);
+
+            if (! is_array($decoded)) {
+                continue;
+            }
+
+            foreach ($decoded['datasets'] ?? [] as $dataset) {
+                if (($dataset['label'] ?? null) === $datasetLabel) {
+                    return $decoded;
+                }
+            }
+        }
+
+        $this->fail('No chart payload was found for dataset ['.$datasetLabel.'].');
+    }
 }

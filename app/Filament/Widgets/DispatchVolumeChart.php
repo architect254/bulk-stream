@@ -16,7 +16,7 @@ class DispatchVolumeChart extends ChartWidget
 
     protected static ?int $sort = 20;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = ['default' => 'full', 'lg' => 1];
 
     protected ?string $heading = 'Dispatch volume by day';
 

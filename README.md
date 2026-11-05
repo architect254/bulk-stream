@@ -86,24 +86,23 @@ and never mutate operational records.
 
 ## Operations analytics
 
-The dashboard includes a cargo-flow chart and an inventory-by-commodity chart.
-The operations analytics page includes received-mass, dispatch-volume, tank
-utilization, and commodity throughput charts.
+The main dashboard is the single analytical workspace. It retains the
+operational cargo-flow and inventory-by-commodity charts and integrates:
 
+- received mass by day
+- dispatch volume by day
+- tank capacity utilization
+- commodity throughput and current stock
+- a reporting-period summary including transit loss
+- commodity breakdown, completed-discharge and reconciliation tables
 
+The dashboard has one shared reporting period (Today, Last 7 Days, Current
+Month, Previous Month, Custom) using `Africa/Nairobi` day boundaries. Database
+timestamps remain stored in UTC. Current inventory and tank utilization are
+current-state measures; throughput is period-scoped.
 
-The read-only operations analytics page summarizes completed operations over a
-selected reporting period, including:
-
-- gross, transit loss, and net received mass
-- dispatched mass
-- commodity breakdowns
-- tank inventory and utilization
-- discharge and transit-loss analysis
-- inventory reconciliation against the movement ledger
-
-Reporting periods use `Africa/Nairobi` day boundaries. Database timestamps remain
-stored in UTC.
+The separate Operations Analytics page has been removed. The shared read models,
+chart widgets, period trait and reconciliation logic remain.
 
 ## Setup
 
