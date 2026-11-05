@@ -193,7 +193,7 @@ Final verified results:
 
 ```text
 php artisan test
-# 149 tests, 563 assertions, passed
+# 150 tests, 572 assertions, passed
 
 npm run build
 # success
@@ -211,7 +211,7 @@ php artisan route:list
 - No manual inventory adjustment mechanism.
 - No external integrations, queues, or APIs.
 - No historical event replay/rebuild.
-- Concurrency tests use sequential locked transactions rather than true parallel requests.
+- Concurrency is verified with a process-based MariaDB/InnoDB test using two independent PHP processes and independent database connections.
 - Seed data is assessment-oriented and not a production terminal history.
 
 ## Assessment Scope
