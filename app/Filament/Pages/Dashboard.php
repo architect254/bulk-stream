@@ -3,6 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Application\Dashboard\TerminalDashboardReadModel;
+use App\Filament\Widgets\CargoFlowChart;
+use App\Filament\Widgets\InventoryByCommodityChart;
 use App\Filament\Widgets\OperationalExceptions;
 use App\Filament\Widgets\OperationalFlow;
 use App\Filament\Widgets\RecentMovements;
@@ -40,6 +42,8 @@ class Dashboard extends BaseDashboard
         return [
             TerminalOverview::class,
             OperationalFlow::class,
+            CargoFlowChart::class,
+            InventoryByCommodityChart::class,
             TankBoard::class,
             OperationalExceptions::class,
             RecentMovements::class,

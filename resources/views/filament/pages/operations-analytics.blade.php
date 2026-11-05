@@ -55,6 +55,24 @@
         </div>
     </x-filament::section>
 
+    <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <x-filament::section heading="Received mass by day">
+            @livewire(\App\Filament\Widgets\ReceivedMassChart::class)
+        </x-filament::section>
+
+        <x-filament::section heading="Dispatch volume by day">
+            @livewire(\App\Filament\Widgets\DispatchVolumeChart::class)
+        </x-filament::section>
+    </div>
+
+    <x-filament::section heading="Tank capacity utilization" class="mb-6">
+        @livewire(\App\Filament\Widgets\TankUtilizationChart::class)
+    </x-filament::section>
+
+    <x-filament::section heading="Commodity throughput and current stock" class="mb-6">
+        @livewire(\App\Filament\Widgets\CommodityThroughputChart::class)
+    </x-filament::section>
+
     <x-filament::section heading="Commodity breakdown" class="mb-6">
         <div class="overflow-x-auto">
             <table class="fi-ta-table w-full text-sm">

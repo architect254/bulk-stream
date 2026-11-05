@@ -300,6 +300,82 @@ class OperationalAnalyticsReadModelTest extends TestCase
         CarbonImmutable::setTestNow();
     }
 
+
+    public function test_daily_received_mass_chart_data(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 5000, 'current_quantity' => 0]);
+        $vessel = Vessel::factory()->create(['status' => VesselStatus::Arriving]);
+
+        $discharge = Discharge::factory()->create([
+            'vessel_id' => $vessel->id,
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Draft,
+        ]);
+        DischargeLog::factory()->create([
+            'discharge_id' => $discharge->id,
+            'external_event_id' => 'chart-inbound',
+            'occurred_at' => now()->subMinute(),
+            'gross_mass' => 1000,
+        ]);
+        app(\App\Actions\ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
+
+        $readModel = app(OperationalAnalyticsReadModel::class);
+        [$start, $end] = $readModel->resolvePeriod('today');
+
+        $data = $readModel->dailyReceivedMass($start, $end);
+
+        $this->assertCount(1, $data['labels']);
+        $this->assertSame([1000.0], $data['gross']);
+        $this->assertSame([995.0], $data['net']);
+        $this->assertSame('5.000', $data['transit_loss_total']);
+    }
+
+    public function test_daily_dispatched_mass_chart_data(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 5000, 'current_quantity' => 100]);
+        $dispatch = TruckDispatch::factory()->create([
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'quantity' => 40,
+            'status' => TruckDispatchStatus::Planned,
+            'truck_registration' => 'KAA 123A',
+            'driver_name' => 'Driver',
+        ]);
+        app(\App\Actions\ProcessTruckDispatch::class)->execute($dispatch->fresh(['tank', 'commodity']));
+
+        $readModel = app(OperationalAnalyticsReadModel::class);
+        [$start, $end] = $readModel->resolvePeriod('today');
+
+        $data = $readModel->dailyDispatchedMass($start, $end);
+
+        $this->assertCount(1, $data['labels']);
+        $this->assertSame([40.0], $data['quantity']);
+    }
+
+    public function test_commodity_throughput_chart_data(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 5000, 'current_quantity' => 100]);
+
+        $readModel = app(OperationalAnalyticsReadModel::class);
+        [$start, $end] = $readModel->resolvePeriod('today');
+
+        $rows = $readModel->commoditySummary($start, $end);
+        $row = $rows->firstWhere('code', CommodityCode::CPO->value);
+
+        $this->assertSame('100.000', $row['current_inventory']);
+        $this->assertSame(0, $row['received_operations']);
+    }
+
     private function freezeAt(string $datetime): void
     {
         CarbonImmutable::setTestNow(CarbonImmutable::parse($datetime, OperationalTime::timezone()));

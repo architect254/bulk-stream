@@ -457,6 +457,41 @@ class DashboardReadModelTest extends TestCase
         $this->assertSame($before, $after);
     }
 
+    public function test_daily_cargo_flow_includes_zero_activity_days(): void
+    {
+        $this->freezeAt('2026-11-04 10:00:00');
+
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create([
+            'commodity_id' => $commodity->id,
+            'capacity' => 5000,
+            'current_quantity' => 0,
+        ]);
+        $vessel = Vessel::factory()->create(['status' => VesselStatus::Arriving]);
+
+        $discharge = Discharge::factory()->create([
+            'vessel_id' => $vessel->id,
+            'commodity_id' => $commodity->id,
+            'tank_id' => $tank->id,
+            'status' => DischargeStatus::Draft,
+        ]);
+        DischargeLog::factory()->create([
+            'discharge_id' => $discharge->id,
+            'external_event_id' => 'daily-inbound',
+            'occurred_at' => now()->subMinute(),
+            'gross_mass' => 1000,
+        ]);
+        app(\App\Actions\ProcessInboundDischarge::class)->execute($discharge->fresh(['logs', 'tank', 'commodity', 'vessel']));
+
+        $flow = app(\App\Application\Dashboard\TerminalDashboardReadModel::class)->dailyCargoFlow(7);
+
+        $this->assertCount(7, $flow['labels']);
+        $this->assertCount(7, $flow['inbound']);
+        $this->assertCount(7, $flow['outbound']);
+        $this->assertSame(995.0, array_sum($flow['inbound']));
+        $this->assertSame(0.0, array_sum($flow['outbound']));
+    }
+
     private function freezeAt(string $datetime): void
     {
         $moment = CarbonImmutable::parse($datetime, OperationalTime::timezone());

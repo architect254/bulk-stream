@@ -329,6 +329,62 @@ final class TerminalDashboardReadModel
     }
 
     /**
+     * @return array{labels: list<string>, inbound: list<float>, outbound: list<float>}
+     */
+    public function dailyCargoFlow(int $days = 7): array
+    {
+        $endNairobi = OperationalTime::now()->endOfDay();
+        $startNairobi = OperationalTime::now()->subDays($days - 1)->startOfDay();
+
+        $startUtc = $startNairobi->setTimezone('UTC');
+        $endUtc = $endNairobi->setTimezone('UTC');
+
+        $labels = [];
+        $index = [];
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startNairobi->addDays($i);
+            $labels[] = $date->format('j M');
+            $index[$date->toDateString()] = $i;
+        }
+
+        $inbound = array_fill(0, $days, 0.0);
+        $outbound = array_fill(0, $days, 0.0);
+
+        $discharges = Discharge::query()
+            ->where('status', DischargeStatus::Completed)
+            ->whereBetween('completed_at', [$startUtc, $endUtc])
+            ->get(['completed_at', 'net_received_mass']);
+
+        foreach ($discharges as $discharge) {
+            $date = $discharge->completed_at?->timezone(OperationalTime::timezone())->toDateString();
+
+            if ($date !== null && isset($index[$date])) {
+                $inbound[$index[$date]] += (float) $discharge->net_received_mass;
+            }
+        }
+
+        $dispatches = TruckDispatch::query()
+            ->where('status', TruckDispatchStatus::Dispatched)
+            ->whereBetween('dispatched_at', [$startUtc, $endUtc])
+            ->get(['dispatched_at', 'quantity']);
+
+        foreach ($dispatches as $dispatch) {
+            $date = $dispatch->dispatched_at?->timezone(OperationalTime::timezone())->toDateString();
+
+            if ($date !== null && isset($index[$date])) {
+                $outbound[$index[$date]] += (float) $dispatch->quantity;
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'inbound' => $inbound,
+            'outbound' => $outbound,
+        ];
+    }
+
+    /**
      * @return array{0: CarbonImmutable, 1: CarbonImmutable}
      */
     private function dayWindow(): array
