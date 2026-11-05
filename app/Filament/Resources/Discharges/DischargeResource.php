@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\Discharges;
 
+use App\Enums\DischargeStatus;
 use App\Filament\Resources\Discharges\Pages\CreateDischarge;
 use App\Filament\Resources\Discharges\Pages\EditDischarge;
 use App\Filament\Resources\Discharges\Pages\ListDischarges;
 use App\Filament\Resources\Discharges\Pages\ViewDischarge;
+use App\Filament\Resources\Discharges\RelationManagers\LogsRelationManager;
+use App\Filament\Resources\Discharges\RelationManagers\ResultingMovementRelationManager;
 use App\Filament\Resources\Discharges\Schemas\DischargeForm;
 use App\Filament\Resources\Discharges\Schemas\DischargeInfolist;
 use App\Filament\Resources\Discharges\Tables\DischargesTable;
@@ -19,15 +22,17 @@ use Filament\Tables\Table;
 class DischargeResource extends Resource
 {
     protected static bool $shouldSkipAuthorization = true;
+
     public static function canEdit($record): bool
     {
-        return $record->status === \App\Enums\DischargeStatus::Draft;
+        return $record->status === DischargeStatus::Draft;
     }
 
     public static function canDelete($record): bool
     {
-        return $record->status === \App\Enums\DischargeStatus::Draft;
+        return $record->status === DischargeStatus::Draft;
     }
+
     protected static ?string $model = Discharge::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowDownTray;
@@ -35,6 +40,7 @@ class DischargeResource extends Resource
     protected static \UnitEnum|string|null $navigationGroup = 'Operations';
 
     protected static ?int $navigationSort = 20;
+
     protected static ?string $navigationLabel = 'Inbound discharges';
 
     public static function form(Schema $schema): Schema
@@ -55,7 +61,8 @@ class DischargeResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            LogsRelationManager::class,
+            ResultingMovementRelationManager::class,
         ];
     }
 

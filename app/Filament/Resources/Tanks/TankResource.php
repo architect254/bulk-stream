@@ -6,6 +6,7 @@ use App\Filament\Resources\Tanks\Pages\CreateTank;
 use App\Filament\Resources\Tanks\Pages\EditTank;
 use App\Filament\Resources\Tanks\Pages\ListTanks;
 use App\Filament\Resources\Tanks\Pages\ViewTank;
+use App\Filament\Resources\Tanks\RelationManagers\MovementsRelationManager;
 use App\Filament\Resources\Tanks\Schemas\TankForm;
 use App\Filament\Resources\Tanks\Schemas\TankInfolist;
 use App\Filament\Resources\Tanks\Tables\TanksTable;
@@ -19,6 +20,7 @@ use Filament\Tables\Table;
 class TankResource extends Resource
 {
     protected static bool $shouldSkipAuthorization = true;
+
     protected static ?string $model = Tank::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
@@ -26,6 +28,7 @@ class TankResource extends Resource
     protected static \UnitEnum|string|null $navigationGroup = 'Inventory';
 
     protected static ?int $navigationSort = 10;
+
     protected static ?string $navigationLabel = 'Tank inventory';
 
     public static function form(Schema $schema): Schema
@@ -46,7 +49,7 @@ class TankResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            MovementsRelationManager::class,
         ];
     }
 

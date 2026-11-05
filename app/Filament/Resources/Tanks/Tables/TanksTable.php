@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Tanks\Tables;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Filament\Support\Quantity;
 use App\Filament\Tables\Columns\MassColumn;
+use App\Models\Commodity;
 use App\Models\Tank;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -56,7 +57,7 @@ class TanksTable
                 SelectFilter::make('commodity_id')
                     ->label('Commodity')
                     ->relationship('commodity', 'name')
-                    ->getOptionLabelFromRecordUsing(fn (\App\Models\Commodity $record): string => $record->code->value),
+                    ->getOptionLabelFromRecordUsing(fn (Commodity $record): string => $record->code->value),
             ])
             ->recordActions([
                 ViewAction::make(),

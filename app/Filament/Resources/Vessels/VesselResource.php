@@ -6,6 +6,7 @@ use App\Filament\Resources\Vessels\Pages\CreateVessel;
 use App\Filament\Resources\Vessels\Pages\EditVessel;
 use App\Filament\Resources\Vessels\Pages\ListVessels;
 use App\Filament\Resources\Vessels\Pages\ViewVessel;
+use App\Filament\Resources\Vessels\RelationManagers\DischargesRelationManager;
 use App\Filament\Resources\Vessels\Schemas\VesselForm;
 use App\Filament\Resources\Vessels\Schemas\VesselInfolist;
 use App\Filament\Resources\Vessels\Tables\VesselsTable;
@@ -19,6 +20,7 @@ use Filament\Tables\Table;
 class VesselResource extends Resource
 {
     protected static bool $shouldSkipAuthorization = true;
+
     protected static ?string $model = Vessel::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
@@ -45,7 +47,7 @@ class VesselResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            DischargesRelationManager::class,
         ];
     }
 

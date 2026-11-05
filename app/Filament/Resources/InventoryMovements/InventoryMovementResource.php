@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\InventoryMovements;
 
-use App\Filament\Resources\InventoryMovements\Pages\CreateInventoryMovement;
-use App\Filament\Resources\InventoryMovements\Pages\EditInventoryMovement;
 use App\Filament\Resources\InventoryMovements\Pages\ListInventoryMovements;
 use App\Filament\Resources\InventoryMovements\Pages\ViewInventoryMovement;
 use App\Filament\Resources\InventoryMovements\Schemas\InventoryMovementForm;
@@ -19,9 +17,22 @@ use Filament\Tables\Table;
 class InventoryMovementResource extends Resource
 {
     protected static bool $shouldSkipAuthorization = true;
-    public static function canCreate(): bool { return false; }
-    public static function canEdit($record): bool { return false; }
-    public static function canDelete($record): bool { return false; }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
+    }
+
     protected static ?string $model = InventoryMovement::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
@@ -29,6 +40,7 @@ class InventoryMovementResource extends Resource
     protected static \UnitEnum|string|null $navigationGroup = 'Inventory';
 
     protected static ?int $navigationSort = 20;
+
     protected static ?string $navigationLabel = 'Inventory movements';
 
     public static function form(Schema $schema): Schema

@@ -2,7 +2,12 @@
 
 namespace App\Filament\Resources\InventoryMovements\Schemas;
 
+use App\Filament\Resources\Discharges\DischargeResource;
+use App\Filament\Resources\TruckDispatches\TruckDispatchResource;
 use App\Filament\Support\Quantity;
+use App\Models\Discharge;
+use App\Models\InventoryMovement;
+use App\Models\TruckDispatch;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -35,6 +40,17 @@ class InventoryMovementInfolist
                     ->placeholder('—'),
                 TextEntry::make('source_id')
                     ->label('Source ID')
+                    ->placeholder('—'),
+                TextEntry::make('source_record')
+                    ->label('Source record')
+                    ->state(fn (InventoryMovement $record): string => filled($record->source_type) && class_exists((string) $record->source_type)
+                        ? class_basename((string) $record->source_type).' #'.$record->source_id
+                        : '—')
+                    ->url(fn (InventoryMovement $record): ?string => match (true) {
+                        filled($record->source_type) && class_exists((string) $record->source_type) && $record->source instanceof Discharge => DischargeResource::getUrl('view', ['record' => $record->source]),
+                        filled($record->source_type) && class_exists((string) $record->source_type) && $record->source instanceof TruckDispatch => TruckDispatchResource::getUrl('view', ['record' => $record->source]),
+                        default => null,
+                    })
                     ->placeholder('—'),
                 TextEntry::make('idempotency_key')
                     ->placeholder('—'),

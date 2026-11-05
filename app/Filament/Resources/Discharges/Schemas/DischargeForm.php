@@ -6,8 +6,10 @@ use App\Domain\Cargo\Services\TransitLossCalculator;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\DischargeStatus;
 use App\Enums\TankStatus;
+use App\Enums\VesselStatus;
 use App\Filament\Support\Quantity;
 use App\Models\Tank;
+use App\Models\Vessel;
 use Carbon\Carbon;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
@@ -16,6 +18,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class DischargeForm
@@ -27,17 +30,30 @@ class DischargeForm
                 Section::make('Discharge')
                     ->schema([
                         Select::make('vessel_id')
-                            ->relationship('vessel', 'name')
+                            ->relationship(
+                                name: 'vessel',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn ($query) => $query->whereIn('status', [
+                                    VesselStatus::Scheduled,
+                                    VesselStatus::Arriving,
+                                ])
+                            )
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->getOptionLabelFromRecordUsing(fn (Vessel $vessel): string => sprintf(
+                                '%s — %s',
+                                $vessel->name,
+                                $vessel->status->getLabel()
+                            )),
                         Select::make('commodity_id')
                             ->relationship('commodity', 'name')
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(fn ($state, Set $set) => $set('tank_id', null)),
                         Select::make('tank_id')
                             ->relationship(
                                 name: 'tank',
@@ -56,11 +72,15 @@ class DischargeForm
                             ->preload()
                             ->required()
                             ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                $set('commodity_id', Tank::find($state)?->commodity_id);
+                            })
                             ->getOptionLabelFromRecordUsing(fn (Tank $tank): string => sprintf(
-                                '%s — %s — %s MT available',
+                                '%s — %s — %s / %s MT used',
                                 $tank->code,
                                 $tank->commodity->code->value,
-                                Quantity::mass(DecimalMath::subtract((string) $tank->capacity, (string) $tank->current_quantity))
+                                Quantity::mass((string) $tank->current_quantity),
+                                Quantity::mass((string) $tank->capacity)
                             )),
                         Select::make('status')
                             ->options(DischargeStatus::class)

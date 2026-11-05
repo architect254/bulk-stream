@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\TruckDispatches\Schemas;
 
+use App\Filament\Resources\InventoryMovements\InventoryMovementResource;
 use App\Filament\Support\Quantity;
+use App\Models\InventoryMovement;
+use App\Models\TruckDispatch;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -24,6 +27,17 @@ class TruckDispatchInfolist
                 TextEntry::make('quantity')
                     ->label('Quantity (MT)')
                     ->formatStateUsing(fn ($state): string => Quantity::mass($state)),
+                TextEntry::make('resulting_movement')
+                    ->label('Resulting inventory movement')
+                    ->state(fn (TruckDispatch $record): string => (string) (InventoryMovement::query()
+                        ->where('source_type', TruckDispatch::class)
+                        ->where('source_id', $record->id)
+                        ->value('reference') ?: '—'))
+                    ->url(fn (TruckDispatch $record): ?string => ($movement = InventoryMovement::query()
+                        ->where('source_type', TruckDispatch::class)
+                        ->where('source_id', $record->id)
+                        ->first()) ? InventoryMovementResource::getUrl('view', ['record' => $movement]) : null)
+                    ->placeholder('—'),
                 TextEntry::make('status')
                     ->badge(),
                 TextEntry::make('dispatched_at')

@@ -2,7 +2,13 @@
 
 namespace App\Enums;
 
-enum VesselStatus: string implements \Filament\Support\Contracts\HasLabel, \Filament\Support\Contracts\HasColor, \Filament\Support\Contracts\HasIcon
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+
+enum VesselStatus: string implements HasColor, HasIcon, HasLabel
 {
     case Scheduled = 'scheduled';
     case Arriving = 'arriving';
@@ -19,7 +25,7 @@ enum VesselStatus: string implements \Filament\Support\Contracts\HasLabel, \Fila
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Scheduled => 'gray',
@@ -29,13 +35,13 @@ enum VesselStatus: string implements \Filament\Support\Contracts\HasLabel, \Fila
         };
     }
 
-    public function getIcon(): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable | null
+    public function getIcon(): string|\BackedEnum|Htmlable|null
     {
         return match ($this) {
-            self::Scheduled => \Filament\Support\Icons\Heroicon::OutlinedClock,
-            self::Arriving => \Filament\Support\Icons\Heroicon::OutlinedArrowDownTray,
-            self::Discharged => \Filament\Support\Icons\Heroicon::OutlinedCheckCircle,
-            self::Departed => \Filament\Support\Icons\Heroicon::OutlinedArrowUpTray,
+            self::Scheduled => Heroicon::OutlinedClock,
+            self::Arriving => Heroicon::OutlinedArrowDownTray,
+            self::Discharged => Heroicon::OutlinedCheckCircle,
+            self::Departed => Heroicon::OutlinedArrowUpTray,
         };
     }
 }

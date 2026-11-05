@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\Discharges\Schemas;
 
+use App\Filament\Resources\InventoryMovements\InventoryMovementResource;
 use App\Filament\Support\Quantity;
+use App\Models\Discharge;
+use App\Models\InventoryMovement;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
@@ -32,6 +35,17 @@ class DischargeInfolist
                 TextEntry::make('net_received_mass')
                     ->label('Net received (MT)')
                     ->formatStateUsing(fn ($state): string => Quantity::mass($state))
+                    ->placeholder('—'),
+                TextEntry::make('resulting_movement')
+                    ->label('Resulting inventory movement')
+                    ->state(fn (Discharge $record): string => (string) (InventoryMovement::query()
+                        ->where('source_type', Discharge::class)
+                        ->where('source_id', $record->id)
+                        ->value('reference') ?: '—'))
+                    ->url(fn (Discharge $record): ?string => ($movement = InventoryMovement::query()
+                        ->where('source_type', Discharge::class)
+                        ->where('source_id', $record->id)
+                        ->first()) ? InventoryMovementResource::getUrl('view', ['record' => $movement]) : null)
                     ->placeholder('—'),
                 TextEntry::make('started_at')
                     ->dateTime()

@@ -2,7 +2,13 @@
 
 namespace App\Enums;
 
-enum DischargeStatus: string implements \Filament\Support\Contracts\HasLabel, \Filament\Support\Contracts\HasColor, \Filament\Support\Contracts\HasIcon
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+
+enum DischargeStatus: string implements HasColor, HasIcon, HasLabel
 {
     case Draft = 'draft';
     case Processing = 'processing';
@@ -19,7 +25,7 @@ enum DischargeStatus: string implements \Filament\Support\Contracts\HasLabel, \F
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Draft => 'gray',
@@ -29,13 +35,13 @@ enum DischargeStatus: string implements \Filament\Support\Contracts\HasLabel, \F
         };
     }
 
-    public function getIcon(): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable | null
+    public function getIcon(): string|\BackedEnum|Htmlable|null
     {
         return match ($this) {
-            self::Draft => \Filament\Support\Icons\Heroicon::OutlinedDocument,
-            self::Processing => \Filament\Support\Icons\Heroicon::OutlinedArrowPath,
-            self::Completed => \Filament\Support\Icons\Heroicon::OutlinedCheckCircle,
-            self::Failed => \Filament\Support\Icons\Heroicon::OutlinedXCircle,
+            self::Draft => Heroicon::OutlinedDocument,
+            self::Processing => Heroicon::OutlinedArrowPath,
+            self::Completed => Heroicon::OutlinedCheckCircle,
+            self::Failed => Heroicon::OutlinedXCircle,
         };
     }
 }

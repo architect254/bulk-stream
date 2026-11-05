@@ -2,7 +2,13 @@
 
 namespace App\Enums;
 
-enum TruckDispatchStatus: string implements \Filament\Support\Contracts\HasLabel, \Filament\Support\Contracts\HasColor, \Filament\Support\Contracts\HasIcon
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
+
+enum TruckDispatchStatus: string implements HasColor, HasIcon, HasLabel
 {
     case Planned = 'planned';
     case Loading = 'loading';
@@ -19,7 +25,7 @@ enum TruckDispatchStatus: string implements \Filament\Support\Contracts\HasLabel
         };
     }
 
-    public function getColor(): string | array | null
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Planned => 'gray',
@@ -29,13 +35,13 @@ enum TruckDispatchStatus: string implements \Filament\Support\Contracts\HasLabel
         };
     }
 
-    public function getIcon(): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable | null
+    public function getIcon(): string|\BackedEnum|Htmlable|null
     {
         return match ($this) {
-            self::Planned => \Filament\Support\Icons\Heroicon::OutlinedTruck,
-            self::Loading => \Filament\Support\Icons\Heroicon::OutlinedArrowPath,
-            self::Dispatched => \Filament\Support\Icons\Heroicon::OutlinedCheckCircle,
-            self::Cancelled => \Filament\Support\Icons\Heroicon::OutlinedXCircle,
+            self::Planned => Heroicon::OutlinedTruck,
+            self::Loading => Heroicon::OutlinedArrowPath,
+            self::Dispatched => Heroicon::OutlinedCheckCircle,
+            self::Cancelled => Heroicon::OutlinedXCircle,
         };
     }
 }

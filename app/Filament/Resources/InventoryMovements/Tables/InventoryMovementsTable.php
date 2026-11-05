@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InventoryMovements\Tables;
 
 use App\Filament\Tables\Columns\MassColumn;
+use App\Models\Commodity;
 use App\Models\InventoryMovement;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -53,7 +54,7 @@ class InventoryMovementsTable
                 SelectFilter::make('commodity_id')
                     ->label('Commodity')
                     ->relationship('commodity', 'name')
-                    ->getOptionLabelFromRecordUsing(fn (\App\Models\Commodity $record): string => $record->code->value),
+                    ->getOptionLabelFromRecordUsing(fn (Commodity $record): string => $record->code->value),
             ])
             ->recordActions([])
             ->toolbarActions([])

@@ -50,10 +50,11 @@ class TruckDispatchForm
                                 $set('commodity_id', Tank::find($state)?->commodity_id);
                             })
                             ->getOptionLabelFromRecordUsing(fn (Tank $tank): string => sprintf(
-                                '%s — %s — %s MT available',
+                                '%s — %s — %s / %s MT available',
                                 $tank->code,
                                 $tank->commodity->code->value,
-                                Quantity::mass((string) $tank->current_quantity)
+                                Quantity::mass((string) $tank->current_quantity),
+                                Quantity::mass((string) $tank->capacity)
                             )),
                         Select::make('commodity_id')
                             ->relationship('commodity', 'name')
@@ -67,6 +68,7 @@ class TruckDispatchForm
                             ->numeric()
                             ->required()
                             ->minValue(0.001)
+                            ->helperText('Cannot exceed available tank inventory.')
                             ->live(onBlur: true),
                         Select::make('status')
                             ->options(TruckDispatchStatus::class)
