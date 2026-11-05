@@ -49,6 +49,23 @@ class TruckDispatch extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $dispatch): void {
+            $registration = trim((string) $dispatch->truck_registration);
+            $driver = trim((string) $dispatch->driver_name);
+
+            if ($registration === '' || strlen($registration) < 3 || strlen($registration) > 32
+                || ! preg_match('/^[A-Z0-9][A-Z0-9 \-]{2,31}$/i', $registration)) {
+                throw new InvalidCargoState('Truck registration must be a valid commercial registration.');
+            }
+
+            if ($driver === '' || strlen($driver) < 2 || strlen($driver) > 255) {
+                throw new InvalidCargoState('Driver name must be between 2 and 255 characters.');
+            }
+
+            $dispatch->truck_registration = $registration;
+            $dispatch->driver_name = $driver;
+        });
+
         static::creating(function (self $dispatch): void {
             if (blank($dispatch->reference)) {
                 $dispatch->reference = 'TRK-'.now()->format('Y').'-'.Str::upper(Str::random(8));

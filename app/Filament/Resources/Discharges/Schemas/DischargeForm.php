@@ -77,6 +77,7 @@ class DischargeForm
                             ->schema([
                                 TextInput::make('external_event_id')
                                     ->label('External event ID')
+                                    ->trim()
                                     ->required()
                                     ->maxLength(255),
                                 DateTimePicker::make('occurred_at')
@@ -86,6 +87,7 @@ class DischargeForm
                                     ->minDate(Carbon::parse('1970-01-01 00:00:00', 'UTC'))
                                     ->maxDate(now()),
                                 TextInput::make('sequence')
+                                    ->trim()
                                     ->maxLength(255),
                                 TextInput::make('gross_mass')
                                     ->label('Gross mass (MT)')

@@ -25,11 +25,16 @@ class TruckDispatchForm
                     ->schema([
                         TextInput::make('truck_registration')
                             ->label('Truck registration')
+                            ->trim()
                             ->required()
-                            ->maxLength(255),
+                            ->minLength(3)
+                            ->maxLength(32)
+                            ->rules(['regex:/^[A-Z0-9][A-Z0-9 \-]{2,31}$/i']),
                         TextInput::make('driver_name')
                             ->label('Driver name')
+                            ->trim()
                             ->required()
+                            ->minLength(2)
                             ->maxLength(255),
                         Select::make('tank_id')
                             ->relationship(
@@ -75,13 +80,13 @@ class TruckDispatchForm
                     ->schema([
                         Placeholder::make('current_stock')
                             ->label('Current tank inventory')
-                            ->content(fn (Get $get): string => Quantity::mass(self::currentStock($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::currentStock($get)).' MT'),
                         Placeholder::make('requested_quantity')
                             ->label('Requested quantity')
-                            ->content(fn (Get $get): string => Quantity::mass(self::requestedQuantity($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::requestedQuantity($get)).' MT'),
                         Placeholder::make('projected_remaining')
                             ->label('Projected remaining inventory')
-                            ->content(fn (Get $get): string => Quantity::mass(self::projectedRemaining($get)) . ' MT'),
+                            ->content(fn (Get $get): string => Quantity::mass(self::projectedRemaining($get)).' MT'),
                         Placeholder::make('feasibility')
                             ->label('Appears feasible')
                             ->content(fn (Get $get): string => self::feasible($get) ? 'Yes' : 'No'),
