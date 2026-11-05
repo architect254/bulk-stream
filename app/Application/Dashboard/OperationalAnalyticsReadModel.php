@@ -340,6 +340,88 @@ final class OperationalAnalyticsReadModel
             });
     }
 
+    /**
+     * @return array{labels: list<string>, gross: list<float>, net: list<float>, transit_loss_total: string}
+     */
+    public function dailyReceivedMass(CarbonImmutable $startUtc, CarbonImmutable $endUtc): array
+    {
+        $startNairobi = $startUtc->setTimezone(OperationalTime::timezone())->startOfDay();
+        $endNairobi = $endUtc->setTimezone(OperationalTime::timezone())->endOfDay();
+
+        $days = (int) $startNairobi->diffInDays($endNairobi) + 1;
+        $labels = [];
+        $index = [];
+        $gross = array_fill(0, $days, 0.0);
+        $net = array_fill(0, $days, 0.0);
+        $transitLossTotal = '0.000';
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startNairobi->addDays($i);
+            $labels[] = $date->format('j M');
+            $index[$date->toDateString()] = $i;
+        }
+
+        $discharges = Discharge::query()
+            ->where('status', DischargeStatus::Completed)
+            ->whereBetween('completed_at', [$startUtc, $endUtc])
+            ->get(['completed_at', 'gross_mass', 'transit_loss_mass', 'net_received_mass']);
+
+        foreach ($discharges as $discharge) {
+            $date = $discharge->completed_at?->timezone(OperationalTime::timezone())->toDateString();
+
+            if ($date !== null && isset($index[$date])) {
+                $gross[$index[$date]] += (float) $discharge->gross_mass;
+                $net[$index[$date]] += (float) $discharge->net_received_mass;
+                $transitLossTotal = DecimalMath::add($transitLossTotal, (string) $discharge->transit_loss_mass);
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'gross' => $gross,
+            'net' => $net,
+            'transit_loss_total' => $this->decimal($transitLossTotal),
+        ];
+    }
+
+    /**
+     * @return array{labels: list<string>, quantity: list<float>}
+     */
+    public function dailyDispatchedMass(CarbonImmutable $startUtc, CarbonImmutable $endUtc): array
+    {
+        $startNairobi = $startUtc->setTimezone(OperationalTime::timezone())->startOfDay();
+        $endNairobi = $endUtc->setTimezone(OperationalTime::timezone())->endOfDay();
+
+        $days = (int) $startNairobi->diffInDays($endNairobi) + 1;
+        $labels = [];
+        $index = [];
+        $quantity = array_fill(0, $days, 0.0);
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startNairobi->addDays($i);
+            $labels[] = $date->format('j M');
+            $index[$date->toDateString()] = $i;
+        }
+
+        $dispatches = TruckDispatch::query()
+            ->where('status', TruckDispatchStatus::Dispatched)
+            ->whereBetween('dispatched_at', [$startUtc, $endUtc])
+            ->get(['dispatched_at', 'quantity']);
+
+        foreach ($dispatches as $dispatch) {
+            $date = $dispatch->dispatched_at?->timezone(OperationalTime::timezone())->toDateString();
+
+            if ($date !== null && isset($index[$date])) {
+                $quantity[$index[$date]] += (float) $dispatch->quantity;
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'quantity' => $quantity,
+        ];
+    }
+
     private function decimal(string|int|float|null $value): string
     {
         try {

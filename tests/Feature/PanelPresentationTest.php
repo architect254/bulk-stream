@@ -64,6 +64,8 @@ class PanelPresentationTest extends TestCase
         $this->assertSame([
             TerminalOverview::class,
             OperationalFlow::class,
+            \App\Filament\Widgets\CargoFlowChart::class,
+            \App\Filament\Widgets\InventoryByCommodityChart::class,
             TankBoard::class,
             OperationalExceptions::class,
             RecentMovements::class,
