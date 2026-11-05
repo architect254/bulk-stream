@@ -177,7 +177,7 @@ class OperationalAnalyticsReadModelTest extends TestCase
         $this->assertSame('125.000', $row['stored_balance']);
         $this->assertSame('100.000', $row['reconstructed_balance']);
         $this->assertSame('25.000', $row['difference']);
-        $this->assertSame('Difference', $row['status']);
+        $this->assertSame('Discrepancy', $row['status']);
         $this->assertSame('125.000', (string) $tank->fresh()->current_quantity);
     }
 
@@ -225,6 +225,79 @@ class OperationalAnalyticsReadModelTest extends TestCase
         $this->assertSame('0.000', $summary['received']['gross_mass']);
         $this->assertSame(0, $summary['dispatched']['operations']);
         $this->assertSame('0.000', $summary['dispatched']['quantity']);
+    }
+
+
+    public function test_empty_nonzero_history_is_unverifiable(): void
+    {
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 1000]);
+        $tank->forceFill(['current_quantity' => 25])->save();
+
+        $row = app(OperationalAnalyticsReadModel::class)->reconciliation()->firstWhere('code', $tank->code);
+
+        $this->assertSame('Unverifiable', $row['status']);
+        $this->assertSame('25.000', $row['stored_balance']);
+        $this->assertSame('0.000', $row['reconstructed_balance']);
+        $this->assertSame(0, $row['movement_count']);
+    }
+
+    public function test_broken_balance_chain_is_unverifiable(): void
+    {
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        $tank = Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 1000]);
+
+        InventoryMovement::factory()->create([
+            'tank_id' => $tank->id,
+            'commodity_id' => $commodity->id,
+            'movement_type' => \App\Enums\InventoryMovementType::Inbound,
+            'quantity' => 100,
+            'balance_before' => 0,
+            'balance_after' => 100,
+            'occurred_at' => now(),
+        ]);
+        InventoryMovement::factory()->create([
+            'tank_id' => $tank->id,
+            'commodity_id' => $commodity->id,
+            'movement_type' => \App\Enums\InventoryMovementType::Outbound,
+            'quantity' => 10,
+            'balance_before' => 999,
+            'balance_after' => 989,
+            'occurred_at' => now()->addMinute(),
+        ]);
+
+        $row = app(OperationalAnalyticsReadModel::class)->reconciliation()->firstWhere('code', $tank->code);
+
+        $this->assertFalse($row['balance_chain_valid']);
+        $this->assertSame('Unverifiable', $row['status']);
+    }
+
+    public function test_reconciliation_uses_a_bounded_number_of_queries(): void
+    {
+        $commodity = Commodity::factory()->create(['code' => CommodityCode::CPO]);
+        Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 1000]);
+        Tank::factory()->create(['commodity_id' => $commodity->id, 'capacity' => 1000]);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        app(OperationalAnalyticsReadModel::class)->reconciliation();
+        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+
+        $movementQueries = array_filter($queries, fn (array $query): bool => str_contains($query['query'], 'inventory_movements'));
+
+        $this->assertLessThanOrEqual(1, count($movementQueries));
+    }
+
+    public function test_previous_month_period_boundaries(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-03-15 10:00:00', OperationalTime::timezone()));
+
+        [$start, $end, $label] = app(OperationalAnalyticsReadModel::class)->resolvePeriod('previous_month');
+
+        $this->assertSame('2026-02-01 00:00:00', $start->setTimezone(OperationalTime::timezone())->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-02-28 23:59:59', $end->setTimezone(OperationalTime::timezone())->format('Y-m-d H:i:s'));
+        $this->assertStringContainsString('Feb 2026', $label);
+
+        CarbonImmutable::setTestNow();
     }
 
     private function freezeAt(string $datetime): void
