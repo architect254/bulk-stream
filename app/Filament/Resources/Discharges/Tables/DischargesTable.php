@@ -4,7 +4,9 @@ namespace App\Filament\Resources\Discharges\Tables;
 
 use App\Actions\ProcessInboundDischarge;
 use App\Enums\DischargeStatus;
+use App\Enums\VesselStatus;
 use App\Filament\Tables\Columns\MassColumn;
+use App\Models\Commodity;
 use App\Models\Discharge;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -67,7 +69,7 @@ class DischargesTable
                 SelectFilter::make('commodity_id')
                     ->label('Commodity')
                     ->relationship('commodity', 'name')
-                    ->getOptionLabelFromRecordUsing(fn (\App\Models\Commodity $record): string => $record->code->value),
+                    ->getOptionLabelFromRecordUsing(fn (Commodity $record): string => $record->code->value),
                 SelectFilter::make('tank_id')
                     ->label('Tank')
                     ->relationship('tank', 'code'),
@@ -92,6 +94,7 @@ class DischargesTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (Discharge $record): bool => $record->status === DischargeStatus::Draft)
+                    ->disabled(fn (Discharge $record): bool => $record->vessel?->status !== VesselStatus::Arriving)
                     ->action(function (Discharge $record): void {
                         try {
                             app(ProcessInboundDischarge::class)->execute($record);

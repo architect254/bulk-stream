@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\TruckDispatches\Tables;
 
 use App\Actions\ProcessTruckDispatch;
+use App\Domain\Cargo\Support\DecimalMath;
 use App\Enums\TruckDispatchStatus;
 use App\Filament\Tables\Columns\MassColumn;
+use App\Models\Commodity;
 use App\Models\TruckDispatch;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -56,7 +58,7 @@ class TruckDispatchesTable
                 SelectFilter::make('commodity_id')
                     ->label('Commodity')
                     ->relationship('commodity', 'name')
-                    ->getOptionLabelFromRecordUsing(fn (\App\Models\Commodity $record): string => $record->code->value),
+                    ->getOptionLabelFromRecordUsing(fn (Commodity $record): string => $record->code->value),
                 SelectFilter::make('tank_id')
                     ->label('Tank')
                     ->relationship('tank', 'code'),
@@ -81,6 +83,8 @@ class TruckDispatchesTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (TruckDispatch $record): bool => $record->status === TruckDispatchStatus::Planned || $record->status === TruckDispatchStatus::Loading)
+                    ->disabled(fn (TruckDispatch $record): bool => $record->tank === null
+                        || DecimalMath::toMinorUnits((string) $record->tank->current_quantity) < DecimalMath::toMinorUnits((string) $record->quantity))
                     ->action(function (TruckDispatch $record): void {
                         try {
                             app(ProcessTruckDispatch::class)->execute($record);

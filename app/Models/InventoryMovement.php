@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Cargo\Exceptions\InvalidCargoState;
 use App\Enums\InventoryMovementType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,5 +51,16 @@ class InventoryMovement extends Model
     public function source(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new InvalidCargoState('Inventory movements are append-only and cannot be modified.');
+        });
+
+        static::deleting(function (): void {
+            throw new InvalidCargoState('Inventory movements are append-only and cannot be deleted.');
+        });
     }
 }

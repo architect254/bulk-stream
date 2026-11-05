@@ -14,8 +14,8 @@ use App\Domain\Cargo\Services\TransitLossCalculator;
 use App\Domain\Cargo\Support\DecimalMath;
 use App\Domain\Cargo\ValueObjects\DischargeLogEntry;
 use App\Enums\DischargeStatus;
-use App\Enums\TankStatus;
 use App\Enums\InventoryMovementType;
+use App\Enums\TankStatus;
 use App\Enums\VesselStatus;
 use App\Models\Discharge;
 use App\Models\InventoryMovement;
@@ -26,13 +26,12 @@ use Illuminate\Support\Facades\DB;
 class ProcessInboundDischarge
 {
     public function __construct(
-        private readonly TransitLossCalculator $transitLossCalculator = new TransitLossCalculator(),
-        private readonly ChronologicalLogSorter $logSorter = new ChronologicalLogSorter(),
-        private readonly StateTransitionPolicy $statePolicy = new StateTransitionPolicy(),
-        private readonly TankCapacityPolicy $capacityPolicy = new TankCapacityPolicy(),
-        private readonly ChronologyPolicy $chronologyPolicy = new ChronologyPolicy(),
-    ) {
-    }
+        private readonly TransitLossCalculator $transitLossCalculator = new TransitLossCalculator,
+        private readonly ChronologicalLogSorter $logSorter = new ChronologicalLogSorter,
+        private readonly StateTransitionPolicy $statePolicy = new StateTransitionPolicy,
+        private readonly TankCapacityPolicy $capacityPolicy = new TankCapacityPolicy,
+        private readonly ChronologyPolicy $chronologyPolicy = new ChronologyPolicy,
+    ) {}
 
     public function execute(Discharge|int $discharge, ?string $idempotencyKey = null): Discharge
     {
@@ -45,6 +44,10 @@ class ProcessInboundDischarge
                 ->findOrFail($dischargeId);
 
             if ($discharge->status === DischargeStatus::Completed) {
+                if ($discharge->logs->contains(fn ($log): bool => $log->processed_at === null)) {
+                    $this->chronologyPolicy->assertBatchNotPosted(true);
+                }
+
                 return $discharge;
             }
 
@@ -61,7 +64,7 @@ class ProcessInboundDischarge
             }
 
             if ($discharge->tank->commodity_id !== $discharge->commodity_id) {
-                throw new \App\Domain\Cargo\Exceptions\CommodityMismatch(
+                throw new CommodityMismatch(
                     expected: $discharge->commodity->code->value,
                     actual: $discharge->tank->commodity->code->value,
                 );
@@ -89,6 +92,10 @@ class ProcessInboundDischarge
             foreach ($sorted as $index => $entry) {
                 $log = $discharge->logs->firstWhere('id', $entry->id);
 
+                if ($log !== null) {
+                    $this->chronologyPolicy->assertNotFuture($log->occurred_at);
+                }
+
                 if ($log === null) {
                     throw new InvalidCargoState('Source log could not be resolved during processing.');
                 }
@@ -104,13 +111,13 @@ class ProcessInboundDischarge
 
             $massBalance = $this->transitLossCalculator->calculate($gross);
 
-            $key = $idempotencyKey ?? $discharge->idempotency_key ?? 'inbound-discharge:' . $discharge->id;
+            $key = $idempotencyKey ?? $discharge->idempotency_key ?? 'inbound-discharge:'.$discharge->id;
 
             $discharge->idempotency_key = $key;
-            $discharge->reference = $discharge->reference ?: 'DIS-' . now()->format('Y') . '-' . $discharge->id;
+            $discharge->reference = $discharge->reference ?: 'DIS-'.now()->format('Y').'-'.$discharge->id;
 
             if (InventoryMovement::query()->where('idempotency_key', $key)->exists()) {
-                throw new \App\Domain\Cargo\Exceptions\DuplicateCargoOperation();
+                throw new DuplicateCargoOperation;
             }
 
             $tank = Tank::query()
@@ -118,7 +125,7 @@ class ProcessInboundDischarge
                 ->findOrFail($discharge->tank_id);
 
             if ($tank->status !== TankStatus::Active) {
-                throw new \App\Domain\Cargo\Exceptions\InvalidCargoState(
+                throw new InvalidCargoState(
                     sprintf('Tank %s is inactive and cannot receive cargo.', $tank->code)
                 );
             }
