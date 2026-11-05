@@ -6,11 +6,13 @@ use App\Actions\ProcessInboundDischarge;
 use App\Enums\DischargeStatus;
 use App\Enums\VesselStatus;
 use App\Filament\Resources\Discharges\DischargeResource;
+use App\Filament\Widgets\DischargeMassBalanceChart;
 use App\Models\Discharge;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Schema;
 
 class ViewDischarge extends ViewRecord
 {
@@ -46,6 +48,23 @@ class ViewDischarge extends ViewRecord
                             ->send();
                     }
                 }),
+        ];
+    }
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                $this->getInfolistContentComponent(),
+                ...$this->getWidgetsSchemaComponents([DischargeMassBalanceChart::class]),
+                $this->getRelationManagersContentComponent(),
+            ]);
+    }
+
+    public function getWidgetData(): array
+    {
+        return [
+            'dischargeId' => (int) $this->getRecord()->getKey(),
         ];
     }
 }

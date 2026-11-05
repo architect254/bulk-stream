@@ -16,7 +16,7 @@ class ReceivedMassChart extends ChartWidget
 
     protected static ?int $sort = 10;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = ['default' => 'full', 'lg' => 1];
 
     protected ?string $heading = 'Received mass by day';
 

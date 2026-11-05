@@ -24,6 +24,9 @@ final class ChartPalette
     /** Current stored inventory. */
     public const STOCK = '#0369a1';
 
+    /** Transit loss deducted during discharge (not an inventory movement). */
+    public const TRANSIT_LOSS = '#b45309';
+
     /** Spare tank capacity. */
     public const AVAILABLE = '#cbd5e1';
 

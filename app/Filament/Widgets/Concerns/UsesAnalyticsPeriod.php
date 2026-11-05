@@ -4,6 +4,7 @@ namespace App\Filament\Widgets\Concerns;
 
 use App\Application\Dashboard\OperationalAnalyticsReadModel;
 use Carbon\CarbonImmutable;
+use Livewire\Attributes\Reactive;
 
 /**
  * Carries the Operations Analytics reporting period into chart widgets.
@@ -14,10 +15,13 @@ use Carbon\CarbonImmutable;
  */
 trait UsesAnalyticsPeriod
 {
-    public string $period = 'today';
+    #[Reactive]
+    public string $period = 'last_7_days';
 
+    #[Reactive]
     public ?string $startDate = null;
 
+    #[Reactive]
     public ?string $endDate = null;
 
     /**
